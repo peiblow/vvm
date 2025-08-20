@@ -60,20 +60,18 @@ func runProgram(code []byte) {
 			fmt.Println(val)
 		case OP_NOP:
 		case OP_JMP:
-			ip++
 			destiny := int(code[ip])
+			ip++
 			ip = destiny
 		case OP_JMP_IF:
-			ip++
 			destiny := int(code[ip])
+			ip++
 
 			cond := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 
 			if cond != 0 {
 				ip = destiny
-			} else {
-				ip++
 			}
 		case OP_CALL:
 			destiny := int(code[ip])
@@ -86,13 +84,15 @@ func runProgram(code []byte) {
 			callStack = callStack[:len(callStack)-1]
 			ip = returnAddr
 		case OP_STORE:
-			ip++
 			key := int(code[ip])
+			ip++
 			val := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			storage[key] = val
+			fmt.Println("Armazenado:", val)
 		case OP_SLOAD:
 			key := int(code[ip])
+			ip++
 			val, ok := storage[key]
 
 			if !ok {
@@ -100,6 +100,7 @@ func runProgram(code []byte) {
 			}
 
 			stack = append(stack, val)
+			fmt.Println("Carregado:", val)
 		case OP_MSTORE:
 			ip++
 			key := int(code[ip])
