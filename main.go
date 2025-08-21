@@ -1,17 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"os"
 )
 
 func main() {
-	content, _err := os.ReadFile("test.synx")
+	content, _ := os.ReadFile("00.synx")
 
-	if _err != nil {
-		fmt.Println(_err)
+	tokens := tokenize(string(content))
+	for _, token := range tokens {
+		token.Debug()
 	}
-
-	contract := tokenize(string(content))
-	fmt.Println("-> ", contract)
 }

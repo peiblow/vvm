@@ -1,0 +1,188 @@
+package main
+
+import "fmt"
+
+type TokenType int
+
+const (
+	EOF TokenType = iota
+	NULL
+	TRUE
+	FALSE
+	NUMBER
+	STRING
+	IDENTIFIER
+	CONTRACT
+
+	// Grouping & Braces
+	OPEN_BRACKET
+	CLOSE_BRACKET
+	OPEN_CURLY
+	CLOSE_CURLY
+	OPEN_PAREN
+	CLOSE_PAREN
+
+	// Equivilance
+	ASSIGNMENT
+	EQUALS
+	NOT_EQUALS
+	NOT
+
+	// Conditional
+	LESS
+	LESS_EQUALS
+	GREATER
+	GREATER_EQUALS
+
+	// Logical
+	OR
+	AND
+
+	// Symbols
+	DOT
+	DOT_DOT
+	SEMI_COLON
+	COLON
+	QUESTION
+	COMMA
+
+	// Shorthand
+	PLUS_PLUS
+	MINUS_MINUS
+	PLUS_EQUALS
+	MINUS_EQUALS
+	NULLISH_ASSIGNMENT // ??=
+
+	//Maths
+	PLUS
+	DASH
+	SLASH
+	STAR
+	PERCENT
+
+	// Reserved Keywords
+	FUNC
+	IF
+	ELSE
+	FOREACH
+	WHILE
+	FOR
+
+	// Misc
+	NUM_TOKENS
+)
+
+type Token struct {
+	Type    TokenType
+	Literal string
+}
+
+func NewToken(t TokenType, value string) Token {
+	return Token{
+		Type:    t,
+		Literal: value,
+	}
+}
+
+func (token Token) Debug() {
+	if token.Type == IDENTIFIER || token.Type == NUMBER || token.Type == STRING {
+		fmt.Printf("%s(%s)\n", TokenTypeString(token.Type), token.Literal)
+	} else {
+		fmt.Printf("%s()\n", TokenTypeString(token.Type))
+	}
+}
+
+func TokenTypeString(tp TokenType) string {
+	switch tp {
+	case EOF:
+		return "eof"
+	case NULL:
+		return "null"
+	case NUMBER:
+		return "number"
+	case STRING:
+		return "string"
+	case TRUE:
+		return "true"
+	case FALSE:
+		return "false"
+	case IDENTIFIER:
+		return "identifier"
+	case CONTRACT:
+		return "contract"
+	case OPEN_BRACKET:
+		return "open_bracket"
+	case CLOSE_BRACKET:
+		return "close_bracket"
+	case OPEN_CURLY:
+		return "open_curly"
+	case CLOSE_CURLY:
+		return "close_curly"
+	case OPEN_PAREN:
+		return "open_paren"
+	case CLOSE_PAREN:
+		return "close_paren"
+	case ASSIGNMENT:
+		return "assignment"
+	case EQUALS:
+		return "equals"
+	case NOT_EQUALS:
+		return "not_equals"
+	case NOT:
+		return "not"
+	case LESS:
+		return "less"
+	case LESS_EQUALS:
+		return "less_equals"
+	case GREATER:
+		return "greater"
+	case GREATER_EQUALS:
+		return "greater_equals"
+	case OR:
+		return "or"
+	case AND:
+		return "and"
+	case DOT:
+		return "dot"
+	case DOT_DOT:
+		return "dot_dot"
+	case COLON:
+		return "colon"
+	case QUESTION:
+		return "question"
+	case COMMA:
+		return "comma"
+	case PLUS_PLUS:
+		return "plus_plus"
+	case MINUS_MINUS:
+		return "minus_minus"
+	case PLUS_EQUALS:
+		return "plus_equals"
+	case MINUS_EQUALS:
+		return "minus_equals"
+	case PLUS:
+		return "plus"
+	case DASH:
+		return "dash"
+	case SLASH:
+		return "slash"
+	case STAR:
+		return "star"
+	case PERCENT:
+		return "percent"
+	case FUNC:
+		return "func"
+	case IF:
+		return "if"
+	case ELSE:
+		return "else"
+	case FOREACH:
+		return "foreach"
+	case FOR:
+		return "for"
+	case WHILE:
+		return "while"
+	default:
+		return fmt.Sprintf("unknown(%d)", tp)
+	}
+}

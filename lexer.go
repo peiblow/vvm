@@ -1,85 +1,127 @@
 package main
 
 import (
-	"strings"
-	"unicode"
+	"fmt"
+	"regexp"
 )
 
-type TokenType string
+type regexHandler func(lex *lexer, regex *regexp.Regexp)
 
-const (
-	IDENT   TokenType = "IDENT"
-	NUMBER  TokenType = "NUMBER"
-	STRING  TokenType = "STRING"
-	KEYWORD TokenType = "KEYWORD"
-	SYMBOL  TokenType = "SYMBOL"
-)
-
-type Token struct {
-	Type    TokenType
-	Literal string
+type regexPattern struct {
+	regex   *regexp.Regexp
+	handler regexHandler
 }
 
-func tokenize(input string) Node {
-	var tokens []Token
-	var current strings.Builder
+type lexer struct {
+	patterns []regexPattern
+	tokens   []Token
+	source   string
+	pos      int
+}
 
-	isKeyword := func(word string) bool {
-		keywords := []string{"contract", "func", "if", "else", "for", "int", "string", "print"}
+func (lex *lexer) advanceN(n int) {
+	lex.pos += n
+}
 
-		for _, kw := range keywords {
-			if kw == word {
-				return true
+func (lex *lexer) push(token Token) {
+	lex.tokens = append(lex.tokens, token)
+}
+
+func (lex *lexer) remainder() string {
+	return lex.source[lex.pos:]
+}
+
+func (lex *lexer) at() byte {
+	return lex.source[lex.pos]
+}
+
+func (lex *lexer) at_eof() bool {
+	return lex.pos >= len(lex.source)
+}
+
+func defaultHandler(tp TokenType, value string) regexHandler {
+	return func(lex *lexer, regex *regexp.Regexp) {
+		lex.advanceN(len(value))
+		lex.push(NewToken(tp, value))
+	}
+}
+
+func numberHandler(lex *lexer, regex *regexp.Regexp) {
+	match := regex.FindString(lex.remainder())
+	lex.push(NewToken(NUMBER, match))
+	lex.advanceN(len(match))
+}
+
+func skipHandler(lex *lexer, regex *regexp.Regexp) {
+	match := regex.FindStringIndex(lex.remainder())
+	lex.advanceN(match[1])
+}
+
+func createLexer(input string) *lexer {
+	return &lexer{
+		pos:    0,
+		source: input,
+		tokens: make([]Token, 0),
+		patterns: []regexPattern{
+			{regexp.MustCompile(`\s+`), skipHandler},
+			{regexp.MustCompile(`[0-9]+(\.[0-9]+)?`), numberHandler},
+			{regexp.MustCompile(`\[`), defaultHandler(OPEN_BRACKET, "[")},
+			{regexp.MustCompile(`\]`), defaultHandler(CLOSE_BRACKET, "]")},
+			{regexp.MustCompile(`\{`), defaultHandler(OPEN_CURLY, "{")},
+			{regexp.MustCompile(`\}`), defaultHandler(CLOSE_CURLY, "}")},
+			{regexp.MustCompile(`\(`), defaultHandler(OPEN_PAREN, "(")},
+			{regexp.MustCompile(`\)`), defaultHandler(CLOSE_PAREN, ")")},
+			{regexp.MustCompile(`==`), defaultHandler(EQUALS, "==")},
+			{regexp.MustCompile(`!=`), defaultHandler(NOT_EQUALS, "!=")},
+			{regexp.MustCompile(`=`), defaultHandler(ASSIGNMENT, "=")},
+			{regexp.MustCompile(`!`), defaultHandler(NOT, "!")},
+			{regexp.MustCompile(`<=`), defaultHandler(LESS_EQUALS, "<=")},
+			{regexp.MustCompile(`<`), defaultHandler(LESS, "<")},
+			{regexp.MustCompile(`>=`), defaultHandler(GREATER_EQUALS, ">=")},
+			{regexp.MustCompile(`>`), defaultHandler(GREATER, ">")},
+			{regexp.MustCompile(`\|\|`), defaultHandler(OR, "||")},
+			{regexp.MustCompile(`&&`), defaultHandler(AND, "&&")},
+			{regexp.MustCompile(`\.\.`), defaultHandler(DOT_DOT, "..")},
+			{regexp.MustCompile(`\.`), defaultHandler(DOT, ".")},
+			{regexp.MustCompile(`;`), defaultHandler(SEMI_COLON, ";")},
+			{regexp.MustCompile(`:`), defaultHandler(COLON, ":")},
+			{regexp.MustCompile(`\?\?=`), defaultHandler(NULLISH_ASSIGNMENT, "??=")},
+			{regexp.MustCompile(`\?`), defaultHandler(QUESTION, "?")},
+			{regexp.MustCompile(`,`), defaultHandler(COMMA, ",")},
+			{regexp.MustCompile(`\+\+`), defaultHandler(PLUS_PLUS, "++")},
+			{regexp.MustCompile(`--`), defaultHandler(MINUS_MINUS, "--")},
+			{regexp.MustCompile(`\+=`), defaultHandler(PLUS_EQUALS, "+=")},
+			{regexp.MustCompile(`-=`), defaultHandler(MINUS_EQUALS, "-=")},
+			{regexp.MustCompile(`\+`), defaultHandler(PLUS, "+")},
+			{regexp.MustCompile(`-`), defaultHandler(DASH, "-")},
+			{regexp.MustCompile(`/`), defaultHandler(SLASH, "/")},
+			{regexp.MustCompile(`\*`), defaultHandler(STAR, "*")},
+			{regexp.MustCompile(`%`), defaultHandler(PERCENT, "%")},
+		},
+	}
+}
+
+func tokenize(input string) []Token {
+	lex := createLexer(input)
+
+	for !lex.at_eof() {
+		matched := false
+
+		for _, pattern := range lex.patterns {
+			loc := pattern.regex.FindStringIndex(lex.remainder())
+
+			if loc != nil && loc[0] == 0 {
+				pattern.handler(lex, pattern.regex)
+				matched = true
+				break
 			}
 		}
 
-		return false
-	}
-
-	isNumber := func(num string) bool {
-		for _, n := range num {
-			if !unicode.IsDigit(n) {
-				return false
-			}
-		}
-		return len(num) > 0
-	}
-
-	flush := func() {
-		if current.Len() > 0 {
-			word := current.String()
-			if isKeyword(word) {
-				tokens = append(tokens, Token{Type: KEYWORD, Literal: word})
-			} else if isNumber(word) {
-				tokens = append(tokens, Token{Type: NUMBER, Literal: word})
-			} else {
-				tokens = append(tokens, Token{Type: IDENT, Literal: word})
-			}
-			current.Reset()
+		if !matched {
+			panic(fmt.Sprintf("Lexer error: Unrecognized token near %s", lex.remainder()))
 		}
 	}
 
-	for _, r := range input {
-		switch {
-		case unicode.IsLetter(r):
-			current.WriteRune(r)
-		case unicode.IsDigit(r):
-			current.WriteRune(r)
-		case unicode.IsSpace(r):
-			flush()
-		case r == '"' || r == '\'':
-			flush()
-			current.Reset()
-		case strings.ContainsRune("{}();=,+-<>[]", r):
-			flush()
-			tokens = append(tokens, Token{Type: SYMBOL, Literal: string(r)})
-		default:
-			flush()
-		}
-	}
-
-	flush()
-	contract, _ := parseBlock(tokens, 0)
-
-	return contract
+	lex.push(NewToken(EOF, "EOF"))
+	return lex.tokens
 }
