@@ -52,9 +52,28 @@ func numberHandler(lex *lexer, regex *regexp.Regexp) {
 	lex.advanceN(len(match))
 }
 
+func stringHandler(lex *lexer, regex *regexp.Regexp) {
+	match := regex.FindStringIndex(lex.remainder())
+	stringLiteral := lex.remainder()[match[0]+1 : match[1]-1]
+	lex.push(NewToken(NUMBER, stringLiteral))
+	lex.advanceN(len(stringLiteral) + 2)
+}
+
 func skipHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindStringIndex(lex.remainder())
 	lex.advanceN(match[1])
+}
+
+func symbolHandler(lex *lexer, regex *regexp.Regexp) {
+	value := regex.FindString(lex.remainder())
+
+	if tp, exists := reserved_lu[value]; exists {
+		lex.push(NewToken(tp, value))
+	} else {
+		lex.push(NewToken(IDENTIFIER, value))
+	}
+
+	lex.advanceN(len(value))
 }
 
 func createLexer(input string) *lexer {
@@ -63,8 +82,11 @@ func createLexer(input string) *lexer {
 		source: input,
 		tokens: make([]Token, 0),
 		patterns: []regexPattern{
-			{regexp.MustCompile(`\s+`), skipHandler},
+			{regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`), symbolHandler},
 			{regexp.MustCompile(`[0-9]+(\.[0-9]+)?`), numberHandler},
+			{regexp.MustCompile(`"[^"]*"`), stringHandler},
+			{regexp.MustCompile(`\/\/*`), skipHandler},
+			{regexp.MustCompile(`\s+`), skipHandler},
 			{regexp.MustCompile(`\[`), defaultHandler(OPEN_BRACKET, "[")},
 			{regexp.MustCompile(`\]`), defaultHandler(CLOSE_BRACKET, "]")},
 			{regexp.MustCompile(`\{`), defaultHandler(OPEN_CURLY, "{")},

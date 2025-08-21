@@ -72,6 +72,15 @@ const (
 	NUM_TOKENS
 )
 
+var reserved_lu map[string]TokenType = map[string]TokenType{
+	"func":     FUNC,
+	"if":       IF,
+	"foreach":  FOREACH,
+	"while":    WHILE,
+	"for":      FOR,
+	"contract": CONTRACT,
+}
+
 type Token struct {
 	Type    TokenType
 	Literal string
