@@ -6,11 +6,14 @@ const (
 	OP_SUB   = 0x03 // subtração
 	OP_MUL   = 0x04 // multiplicação
 	OP_DIV   = 0x05 // divisão
-	OP_POP   = 0x06 // remove topo da stack
-	OP_DUP   = 0x07 // duplica topo da stack
-	OP_SWAP  = 0x08 // troca dois valores do topo
-	OP_PRINT = 0x09 // imprime valor do topo
-	OP_NOP   = 0x0A // instrução nula
+	OP_GT    = 0x06 // Maior que
+	OP_LT    = 0x07 // Menor que
+	OP_EQ    = 0x08 // igual a
+	OP_POP   = 0x09 // remove topo da stack
+	OP_DUP   = 0x0A // duplica topo da stack
+	OP_SWAP  = 0x0B // troca dois valores do topo
+	OP_PRINT = 0x0C // imprime valor do topo
+	OP_NOP   = 0x0D // instrução nula
 
 	OP_JMP    = 0x14 // salto incondicional
 	OP_JMP_IF = 0x15 // salto condicional

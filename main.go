@@ -1,30 +1,17 @@
 package main
 
+import (
+	"fmt"
+	"os"
+)
+
 func main() {
-	program := []byte{
-		OP_PUSH, 10,
-		OP_STORE, 1,
-		OP_PUSH, 20,
-		OP_STORE, 2,
+	content, _err := os.ReadFile("test.synx")
 
-		OP_SLOAD, 1,
-		OP_SLOAD, 2,
-		OP_ADD,
-		OP_STORE, 3,
-
-		OP_SLOAD, 3,
-		OP_PUSH, 10,
-		OP_SUB,
-		OP_JMP_IF, 22,
-
-		OP_PUSH, 1,
-		OP_PRINT,
-		OP_JMP, 30,
-
-		OP_PUSH, 2,
-		OP_PRINT,
-
-		OP_HALT,
+	if _err != nil {
+		fmt.Println(_err)
 	}
-	runProgram(program)
+
+	contract := tokenize(string(content))
+	fmt.Println("-> ", contract)
 }
