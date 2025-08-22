@@ -1,4 +1,4 @@
-package main
+package lexer
 
 import (
 	"fmt"
@@ -123,7 +123,7 @@ func createLexer(input string) *lexer {
 	}
 }
 
-func tokenize(input string) []Token {
+func Tokenize(input string) []Token {
 	lex := createLexer(input)
 
 	for !lex.at_eof() {
