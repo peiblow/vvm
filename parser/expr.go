@@ -61,3 +61,15 @@ func parse_binary_expr(p *parser, left ast.Expr, bp binding_power) ast.Expr {
 		Right:    right,
 	}
 }
+
+func parse_assignment(p *parser, left ast.Expr, bp binding_power) ast.Expr {
+	operatorToken := p.currentToken()
+	p.advance()
+	right := parse_expr(p, assignment)
+
+	return ast.BinaryExpr{
+		Left:     left,
+		Operator: operatorToken,
+		Right:    right,
+	}
+}

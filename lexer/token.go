@@ -42,6 +42,7 @@ const (
 	DOT
 	DOT_DOT
 	SEMI_COLON
+	BREAK_LINE
 	COLON
 	QUESTION
 	COMMA
@@ -61,6 +62,8 @@ const (
 	PERCENT
 
 	// Reserved Keywords
+	LET
+	CONST
 	FUNC
 	IF
 	ELSE
@@ -78,6 +81,8 @@ var reserved_lu map[string]TokenType = map[string]TokenType{
 	"foreach":  FOREACH,
 	"while":    WHILE,
 	"for":      FOR,
+	"const":    CONST,
+	"let":      LET,
 	"contract": CONTRACT,
 }
 

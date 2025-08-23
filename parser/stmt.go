@@ -13,9 +13,24 @@ func parse_stmt(p *parser) ast.Stmt {
 	}
 
 	expr := parse_expr(p, defalt_bp)
-	p.expect(lexer.SEMI_COLON)
+	p.expect(lexer.BREAK_LINE)
 
 	return ast.ExpressionStmt{
 		Expression: expr,
+	}
+}
+
+func parse_var_decl(p *parser) ast.Stmt {
+	isConst := p.advance().Type == lexer.CONST
+	varName := p.expectError(lexer.IDENTIFIER, "Inside variable declaration expected to find variable name").Literal
+
+	p.expect(lexer.ASSIGNMENT)
+	assignmentValue := parse_expr(p, assignment)
+	p.expect(lexer.BREAK_LINE)
+
+	return ast.VarDeclStmt{
+		Identifier:    varName,
+		AssignedValue: assignmentValue,
+		Constant:      isConst,
 	}
 }

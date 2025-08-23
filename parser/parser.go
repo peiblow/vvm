@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/peiblow/vvm/ast"
 	"github.com/peiblow/vvm/lexer"
 )
@@ -29,9 +31,23 @@ func (p *parser) hasTokens() bool {
 }
 
 func (p *parser) expect(token lexer.TokenType) lexer.Token {
-	tk := p.currentToken()
-	p.pos++
-	return tk
+	return p.expectError(token, nil)
+}
+
+func (p *parser) expectError(expectedType lexer.TokenType, err any) lexer.Token {
+	token := p.currentToken()
+	tokenType := token.Type
+
+	if tokenType != expectedType {
+		if err == nil {
+			err = fmt.Sprintf("Expected %s but received %s instead\n", lexer.TokenTypeString(expectedType), lexer.TokenTypeString(tokenType))
+			fmt.Println(token)
+		}
+
+		panic(err)
+	}
+
+	return p.advance()
 }
 
 func createParser(tokens []lexer.Token) *parser {
