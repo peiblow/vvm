@@ -78,6 +78,7 @@ const (
 var reserved_lu map[string]TokenType = map[string]TokenType{
 	"func":     FUNC,
 	"if":       IF,
+	"else":     ELSE,
 	"foreach":  FOREACH,
 	"while":    WHILE,
 	"for":      FOR,

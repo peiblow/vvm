@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/peiblow/vvm/ast"
@@ -12,7 +13,7 @@ func parse_expr(p *parser, bp binding_power) ast.Expr {
 	nud_fn, exists := nud_lu[tokenType]
 
 	if !exists {
-		panic("NUD handler expected for token")
+		panic(fmt.Sprintf("NUD handler expected for token %v - %v", tokenType, p.currentToken().Literal))
 	}
 
 	left := nud_fn(p)
@@ -22,10 +23,10 @@ func parse_expr(p *parser, bp binding_power) ast.Expr {
 		led_fn, exists := led_lu[tokenType]
 
 		if !exists {
-			panic("LED handler expected for token")
+			panic(fmt.Sprintf("LED handler expected for token %v", tokenType))
 		}
 
-		left = led_fn(p, left, bp)
+		left = led_fn(p, left, bp_lu[p.currentTokenType()])
 	}
 
 	return left
@@ -46,8 +47,20 @@ func parse_primary_expr(p *parser) ast.Expr {
 		return ast.SymbolExpr{
 			Value: p.advance().Literal,
 		}
+	case lexer.PLUS_PLUS:
+		return ast.SymbolExpr{
+			Value: p.advance().Literal,
+		}
 	default:
 		panic("Cannot create primary expr")
+	}
+}
+
+func parse_incdec_expr(p *parser, left ast.Expr, bp binding_power) ast.Expr {
+	op := p.advance()
+	return ast.IncDecExpr{
+		Left:     left,
+		Operator: op,
 	}
 }
 
@@ -67,9 +80,24 @@ func parse_assignment(p *parser, left ast.Expr, bp binding_power) ast.Expr {
 	p.advance()
 	right := parse_expr(p, assignment)
 
-	return ast.BinaryExpr{
+	return ast.AssignmentExpr{
 		Left:     left,
 		Operator: operatorToken,
 		Right:    right,
 	}
+}
+
+func parse_prefix_expr(p *parser) ast.Expr {
+	return ast.PrefixExpr{
+		Operator:  p.advance(),
+		RightExpr: parse_expr(p, defalt_bp),
+	}
+}
+
+func grouping_expr(p *parser) ast.Expr {
+	p.advance()
+
+	expr := parse_expr(p, defalt_bp)
+	p.expect(lexer.CLOSE_PAREN)
+	return expr
 }

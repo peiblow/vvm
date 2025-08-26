@@ -5,6 +5,21 @@ import (
 	"github.com/peiblow/vvm/lexer"
 )
 
+func parse_block(p *parser) ast.BlockStmt {
+	p.expect(lexer.OPEN_CURLY)
+
+	body := make([]ast.Stmt, 0)
+	for p.hasTokens() && p.currentTokenType() != lexer.CLOSE_CURLY {
+		body = append(body, parse_stmt(p))
+	}
+
+	p.expect(lexer.CLOSE_CURLY)
+
+	return ast.BlockStmt{
+		Body: body,
+	}
+}
+
 func parse_stmt(p *parser) ast.Stmt {
 	stmt_fn, exists := stmt_lu[p.currentTokenType()]
 
@@ -13,10 +28,22 @@ func parse_stmt(p *parser) ast.Stmt {
 	}
 
 	expr := parse_expr(p, defalt_bp)
-	p.expect(lexer.BREAK_LINE)
 
 	return ast.ExpressionStmt{
 		Expression: expr,
+	}
+}
+
+func parse_contract_decl(p *parser) ast.Stmt {
+	p.expect(lexer.CONTRACT)
+	contractName := p.currentToken().Literal
+	p.advance()
+
+	body := parse_block(p)
+
+	return ast.ContractStmt{
+		Identifier: contractName,
+		Body:       body.Body,
 	}
 }
 
@@ -26,11 +53,66 @@ func parse_var_decl(p *parser) ast.Stmt {
 
 	p.expect(lexer.ASSIGNMENT)
 	assignmentValue := parse_expr(p, assignment)
-	p.expect(lexer.BREAK_LINE)
 
 	return ast.VarDeclStmt{
 		Identifier:    varName,
 		AssignedValue: assignmentValue,
 		Constant:      isConst,
+	}
+}
+
+func parse_if_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.IF)
+	p.expect(lexer.OPEN_PAREN)
+	condition := parse_expr(p, defalt_bp)
+	p.expect(lexer.CLOSE_PAREN)
+
+	thenBlock := parse_block(p)
+	var elseBlock ast.BlockStmt
+	if p.currentTokenType() == lexer.ELSE {
+		p.advance()
+		elseBlock = parse_block(p)
+	}
+
+	return ast.IfStmt{
+		Condition: condition,
+		Then:      thenBlock,
+		Else:      elseBlock,
+	}
+}
+
+func parse_while_loop_stmt(p *parser) ast.Stmt {
+	p.advance()
+	p.expect(lexer.OPEN_PAREN)
+	cond := parse_expr(p, defalt_bp)
+	p.expect(lexer.CLOSE_PAREN)
+	body := parse_block(p)
+
+	return ast.WhileStmt{
+		Condition: cond,
+		Body:      body,
+	}
+}
+
+func parse_for_loop_stmt(p *parser) ast.Stmt {
+	p.advance()
+	p.expect(lexer.OPEN_PAREN)
+
+	init := parse_stmt(p)
+	p.expect(lexer.SEMI_COLON)
+
+	cond := parse_expr(p, defalt_bp)
+	p.expect(lexer.SEMI_COLON)
+
+	post := parse_stmt(p)
+	p.expect(lexer.CLOSE_PAREN)
+
+	body := parse_block(p)
+
+	return ast.ForStmt{
+		Init:      init,
+		Condition: cond,
+		Post:      post,
+		Body:      body,
 	}
 }

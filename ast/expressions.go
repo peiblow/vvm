@@ -29,3 +29,27 @@ type BinaryExpr struct {
 }
 
 func (n BinaryExpr) expr() {}
+
+type PrefixExpr struct {
+	Operator  lexer.Token
+	RightExpr Expr
+}
+
+func (n PrefixExpr) expr() {}
+
+func (n ExpressionStmt) expr() {}
+
+type IncDecExpr struct {
+	Left     Expr
+	Operator lexer.Token
+}
+
+func (n IncDecExpr) expr() {}
+
+type AssignmentExpr struct {
+	Left     Expr
+	Operator lexer.Token
+	Right    Expr
+}
+
+func (n AssignmentExpr) expr() {}
