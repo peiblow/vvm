@@ -65,16 +65,29 @@ func parse_contract_decl(p *parser) ast.Stmt {
 }
 
 func parse_var_decl(p *parser) ast.Stmt {
+	var assignmentValue ast.Expr
+	var varType ast.Type
+
 	isConst := p.advance().Type == lexer.CONST
 	varName := p.expectError(lexer.IDENTIFIER, "Inside variable declaration expected to find variable name").Literal
 
-	p.expect(lexer.ASSIGNMENT)
-	assignmentValue := parse_expr(p, assignment)
+	if p.currentTokenType() == lexer.COLON {
+		p.advance()
+		varType = parse_type(p, defalt_bp)
+	}
+
+	if p.currentTokenType() != lexer.ASSIGNMENT && isConst {
+		panic("A constant should be initilized with an default value")
+	} else {
+		p.expect(lexer.ASSIGNMENT)
+		assignmentValue = parse_expr(p, assignment)
+	}
 
 	return ast.VarDeclStmt{
 		Identifier:    varName,
 		AssignedValue: assignmentValue,
 		Constant:      isConst,
+		ExplicityType: varType,
 	}
 }
 
@@ -135,16 +148,26 @@ func parse_for_loop_stmt(p *parser) ast.Stmt {
 }
 
 func parse_func_stmt(p *parser) ast.Stmt {
+	var returnType ast.Type
+
 	p.expect(lexer.FUNC)
 	name := ast.ExpressionStmt{Expression: ast.SymbolExpr{Value: p.advance().Literal}}
 
 	args := parse_arguments(p)
 
+	if p.currentTokenType() != lexer.COLON {
+		panic("Functions should have a Return Type specified")
+	} else {
+		p.advance()
+		returnType = parse_type(p, defalt_bp)
+	}
+
 	body := parse_block(p)
 
 	return ast.FuncStmt{
-		Name:      name,
-		Arguments: args,
-		Body:      body,
+		Name:       name,
+		Arguments:  args,
+		Body:       body,
+		ReturnType: returnType,
 	}
 }

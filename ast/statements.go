@@ -23,7 +23,7 @@ type VarDeclStmt struct {
 	Identifier    string
 	Constant      bool
 	AssignedValue Expr
-	// ExplicityType Type
+	ExplicityType Type
 }
 
 func (n VarDeclStmt) stmt() {}
@@ -53,9 +53,10 @@ type ForStmt struct {
 func (n ForStmt) stmt() {}
 
 type FuncStmt struct {
-	Name      Expr
-	Arguments Stmt
-	Body      Stmt
+	Name       Expr
+	Arguments  Stmt
+	Body       Stmt
+	ReturnType Type
 }
 
 func (n FuncStmt) stmt() {}

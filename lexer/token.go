@@ -70,6 +70,7 @@ const (
 	FOREACH
 	WHILE
 	FOR
+	RETURN
 
 	// Misc
 	NUM_TOKENS
@@ -85,6 +86,7 @@ var reserved_lu map[string]TokenType = map[string]TokenType{
 	"const":    CONST,
 	"let":      LET,
 	"contract": CONTRACT,
+	"return":   RETURN,
 }
 
 type Token struct {

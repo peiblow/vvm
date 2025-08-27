@@ -8,6 +8,6 @@ type Expr interface {
 	expr()
 }
 
-type Var interface {
-	varDecl()
+type Type interface {
+	_type()
 }

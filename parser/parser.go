@@ -52,6 +52,8 @@ func (p *parser) expectError(expectedType lexer.TokenType, err any) lexer.Token 
 
 func createParser(tokens []lexer.Token) *parser {
 	createTokenLookups()
+	createTokenTypeLookups()
+
 	return &parser{tokens: tokens}
 }
 
