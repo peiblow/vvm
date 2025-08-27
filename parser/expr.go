@@ -101,3 +101,23 @@ func grouping_expr(p *parser) ast.Expr {
 	p.expect(lexer.CLOSE_PAREN)
 	return expr
 }
+
+func parse_call_expr(p *parser, callee ast.Expr, bp binding_power) ast.Expr {
+	p.expect(lexer.OPEN_PAREN)
+
+	args := []ast.Expr{}
+	for p.currentTokenType() != lexer.CLOSE_PAREN {
+		arg := parse_expr(p, defalt_bp)
+		args = append(args, arg)
+
+		if p.currentTokenType() == lexer.COMMA {
+			p.advance()
+		}
+	}
+	p.expect(lexer.CLOSE_PAREN)
+
+	return ast.CallExpr{
+		Calle:     callee,
+		Arguments: args,
+	}
+}

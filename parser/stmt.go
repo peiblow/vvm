@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/peiblow/vvm/ast"
 	"github.com/peiblow/vvm/lexer"
 )
@@ -38,8 +36,8 @@ func parse_stmt(p *parser) ast.Stmt {
 
 func parse_arguments(p *parser) ast.Stmt {
 	p.expect(lexer.OPEN_PAREN)
-	body := []ast.Stmt{}
 
+	body := []ast.Stmt{}
 	for p.currentTokenType() != lexer.CLOSE_PAREN {
 		expr := parse_expr(p, defalt_bp)
 		body = append(body, ast.ExpressionStmt{Expression: expr})
@@ -138,10 +136,10 @@ func parse_for_loop_stmt(p *parser) ast.Stmt {
 
 func parse_func_stmt(p *parser) ast.Stmt {
 	p.expect(lexer.FUNC)
-	name := parse_expr(p, defalt_bp)
+	name := ast.ExpressionStmt{Expression: ast.SymbolExpr{Value: p.advance().Literal}}
+
 	args := parse_arguments(p)
 
-	fmt.Println(p.currentToken().Literal)
 	body := parse_block(p)
 
 	return ast.FuncStmt{

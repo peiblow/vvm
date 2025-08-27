@@ -54,6 +54,7 @@ func createTokenLookups() {
 	led(lexer.PLUS_EQUALS, assignment, parse_assignment)
 	led(lexer.MINUS_EQUALS, assignment, parse_assignment)
 	led(lexer.PLUS_PLUS, assignment, parse_incdec_expr)
+	led(lexer.OPEN_PAREN, call, parse_call_expr)
 
 	led(lexer.AND, logical, parse_binary_expr)
 	led(lexer.OR, logical, parse_binary_expr)

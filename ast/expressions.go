@@ -53,3 +53,10 @@ type AssignmentExpr struct {
 }
 
 func (n AssignmentExpr) expr() {}
+
+type CallExpr struct {
+	Calle     Expr
+	Arguments []Expr
+}
+
+func (n CallExpr) expr() {}
