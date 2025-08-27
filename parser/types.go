@@ -63,8 +63,9 @@ func parse_symbol_type(p *parser) ast.Type {
 }
 
 func parse_array_type(p *parser) ast.Type {
+	p.advance()
+	p.expect(lexer.CLOSE_BRACKET)
 	var underyinType = parse_type(p, defalt_bp)
-
 	return ast.ArrayType{
 		Underlying: underyinType,
 	}
