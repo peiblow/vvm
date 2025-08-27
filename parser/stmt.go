@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/peiblow/vvm/ast"
 	"github.com/peiblow/vvm/lexer"
 )
@@ -32,6 +34,23 @@ func parse_stmt(p *parser) ast.Stmt {
 	return ast.ExpressionStmt{
 		Expression: expr,
 	}
+}
+
+func parse_arguments(p *parser) ast.Stmt {
+	p.expect(lexer.OPEN_PAREN)
+	body := []ast.Stmt{}
+
+	for p.currentTokenType() != lexer.CLOSE_PAREN {
+		expr := parse_expr(p, defalt_bp)
+		body = append(body, ast.ExpressionStmt{Expression: expr})
+
+		if p.currentTokenType() == lexer.COMMA {
+			p.advance()
+		}
+	}
+
+	p.expect(lexer.CLOSE_PAREN)
+	return ast.BlockStmt{Body: body}
 }
 
 func parse_contract_decl(p *parser) ast.Stmt {
@@ -113,6 +132,21 @@ func parse_for_loop_stmt(p *parser) ast.Stmt {
 		Init:      init,
 		Condition: cond,
 		Post:      post,
+		Body:      body,
+	}
+}
+
+func parse_func_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.FUNC)
+	name := parse_expr(p, defalt_bp)
+	args := parse_arguments(p)
+
+	fmt.Println(p.currentToken().Literal)
+	body := parse_block(p)
+
+	return ast.FuncStmt{
+		Name:      name,
+		Arguments: args,
 		Body:      body,
 	}
 }

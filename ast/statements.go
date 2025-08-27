@@ -51,3 +51,11 @@ type ForStmt struct {
 }
 
 func (n ForStmt) stmt() {}
+
+type FuncStmt struct {
+	Name      Expr
+	Arguments Stmt
+	Body      Stmt
+}
+
+func (n FuncStmt) stmt() {}
