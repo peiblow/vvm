@@ -171,3 +171,13 @@ func parse_func_stmt(p *parser) ast.Stmt {
 		ReturnType: returnType,
 	}
 }
+
+func parse_return_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.RETURN)
+
+	value := parse_expr(p, defalt_bp)
+
+	return ast.ReturnStmt{
+		Value: value,
+	}
+}

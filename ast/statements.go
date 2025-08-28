@@ -68,3 +68,9 @@ type ArrayItemAssignmentStmt struct {
 }
 
 func (n ArrayItemAssignmentStmt) stmt() {}
+
+type ReturnStmt struct {
+	Value Expr
+}
+
+func (n ReturnStmt) stmt() {}
