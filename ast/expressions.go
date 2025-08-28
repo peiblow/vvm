@@ -54,9 +54,43 @@ type AssignmentExpr struct {
 
 func (n AssignmentExpr) expr() {}
 
+type ArrayLiteralExpr struct {
+	Items []Expr
+}
+
+func (n ArrayLiteralExpr) expr() {}
+
+type ArrayAccessItemExpr struct {
+	Array Expr
+	Index Expr
+}
+
+func (n ArrayAccessItemExpr) expr() {}
+
+type ObjectPropertyExpr struct {
+	Key   Expr
+	Value Expr
+}
+
+func (n ObjectPropertyExpr) expr() {}
+
+type ObjectAssignmentExpr struct {
+	Name   Expr
+	Fields []ObjectPropertyExpr
+}
+
+func (n ObjectAssignmentExpr) expr() {}
+
 type CallExpr struct {
 	Calle     Expr
 	Arguments []Expr
 }
 
 func (n CallExpr) expr() {}
+
+type MemberExpr struct {
+	Object   Expr
+	Property Expr
+}
+
+func (n MemberExpr) expr() {}

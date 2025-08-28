@@ -60,3 +60,11 @@ type FuncStmt struct {
 }
 
 func (n FuncStmt) stmt() {}
+
+type ArrayItemAssignmentStmt struct {
+	Name  Expr
+	Index Expr
+	Value Expr
+}
+
+func (n ArrayItemAssignmentStmt) stmt() {}

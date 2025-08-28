@@ -102,6 +102,80 @@ func grouping_expr(p *parser) ast.Expr {
 	return expr
 }
 
+func parse_literal_array_expr(p *parser) ast.Expr {
+	p.expect(lexer.OPEN_BRACKET)
+
+	args := []ast.Expr{}
+	for p.currentTokenType() != lexer.CLOSE_BRACKET {
+		arg := parse_expr(p, defalt_bp)
+		args = append(args, arg)
+
+		if p.currentTokenType() == lexer.COMMA {
+			p.advance()
+		}
+	}
+
+	p.expect(lexer.CLOSE_BRACKET)
+	return ast.ArrayLiteralExpr{
+		Items: args,
+	}
+}
+
+func parse_array_access_item_expr(p *parser, identifier ast.Expr, bp binding_power) ast.Expr {
+	p.advance()
+	index := parse_expr(p, defalt_bp)
+	p.expect(lexer.CLOSE_BRACKET)
+
+	return ast.ArrayAccessItemExpr{
+		Array: identifier,
+		Index: index,
+	}
+}
+
+func parse_obj_item_assignment_expr(p *parser) ast.ObjectPropertyExpr {
+	key := parse_expr(p, defalt_bp)
+	p.expect(lexer.COLON)
+
+	value := parse_expr(p, defalt_bp)
+	p.expect(lexer.COMMA)
+
+	return ast.ObjectPropertyExpr{
+		Key:   key,
+		Value: value,
+	}
+}
+
+func parse_obj_assignment_expr(p *parser) ast.Expr {
+	p.expect(lexer.OPEN_CURLY)
+
+	fields := make([]ast.ObjectPropertyExpr, 0)
+	for p.currentTokenType() != lexer.CLOSE_CURLY {
+		prop := parse_obj_item_assignment_expr(p)
+		fields = append(fields, prop)
+
+		if p.currentToken().Type == lexer.COMMA {
+			p.advance()
+		}
+	}
+
+	p.expect(lexer.CLOSE_CURLY)
+	return ast.ObjectAssignmentExpr{
+		Name:   nil,
+		Fields: fields,
+	}
+}
+
+func parse_member_expr(p *parser, callee ast.Expr, bp binding_power) ast.Expr {
+	p.expect(lexer.DOT)
+
+	prop := parse_expr(p, defalt_bp)
+
+	return ast.MemberExpr{
+		Object:   callee,
+		Property: prop,
+	}
+}
+
 func parse_call_expr(p *parser, callee ast.Expr, bp binding_power) ast.Expr {
 	p.expect(lexer.OPEN_PAREN)
 

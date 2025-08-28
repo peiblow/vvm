@@ -17,6 +17,7 @@ type lexer struct {
 	tokens   []Token
 	source   string
 	pos      int
+	line     int
 }
 
 func (lex *lexer) advanceN(n int) {
@@ -55,13 +56,22 @@ func numberHandler(lex *lexer, regex *regexp.Regexp) {
 func stringHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindStringIndex(lex.remainder())
 	stringLiteral := lex.remainder()[match[0]+1 : match[1]-1]
-	lex.push(NewToken(NUMBER, stringLiteral))
+	lex.push(NewToken(STRING, stringLiteral))
 	lex.advanceN(len(stringLiteral) + 2)
 }
 
 func skipHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindStringIndex(lex.remainder())
 	lex.advanceN(match[1])
+}
+
+func commentHandler(lex *lexer, regex *regexp.Regexp) {
+	match := regex.FindStringIndex(lex.remainder())
+	if match != nil {
+		// Advance past the entire comment.
+		lex.advanceN(match[1])
+		lex.line++
+	}
 }
 
 func symbolHandler(lex *lexer, regex *regexp.Regexp) {
@@ -79,15 +89,15 @@ func symbolHandler(lex *lexer, regex *regexp.Regexp) {
 func createLexer(input string) *lexer {
 	return &lexer{
 		pos:    0,
+		line:   1,
 		source: input,
 		tokens: make([]Token, 0),
 		patterns: []regexPattern{
-			{regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`), symbolHandler},
-			{regexp.MustCompile(`[0-9]+(\.[0-9]+)?`), numberHandler},
-			{regexp.MustCompile(`"[^"]*"`), stringHandler},
-			{regexp.MustCompile(`\r?\n`), skipHandler},
-			{regexp.MustCompile(`\/\/*`), skipHandler},
 			{regexp.MustCompile(`\s+`), skipHandler},
+			{regexp.MustCompile(`\/\/*`), commentHandler},
+			{regexp.MustCompile(`"[^"]*"`), stringHandler},
+			{regexp.MustCompile(`[0-9]+(\.[0-9]+)?`), numberHandler},
+			{regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`), symbolHandler},
 			{regexp.MustCompile(`\[`), defaultHandler(OPEN_BRACKET, "[")},
 			{regexp.MustCompile(`\]`), defaultHandler(CLOSE_BRACKET, "]")},
 			{regexp.MustCompile(`\{`), defaultHandler(OPEN_CURLY, "{")},
