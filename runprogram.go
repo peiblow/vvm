@@ -2,10 +2,11 @@ package main
 
 import "fmt"
 
-func runProgram(code []byte) {
+func RunProgram(compile *Compiler) {
+	code := compile.Code
+
 	stack := []int{}
 	callStack := []int{}
-	retStack := []int{}
 
 	storage := make(map[int]int)
 	mstorage := make(map[int]int)
@@ -21,6 +22,9 @@ func runProgram(code []byte) {
 			ip++
 			stack = append(stack, val)
 		case OP_ADD:
+			if len(stack) < 2 {
+				panic("stack underflow on ADD")
+			}
 			a := stack[len(stack)-1]
 			b := stack[len(stack)-2]
 			stack = stack[:len(stack)-2]
@@ -40,6 +44,26 @@ func runProgram(code []byte) {
 			b := stack[len(stack)-2]
 			stack = stack[:len(stack)-2]
 			stack = append(stack, a/b)
+		case OP_GT:
+			a := stack[len(stack)-2]
+			b := stack[len(stack)-1]
+			stack = stack[:len(stack)-2]
+
+			if a > b {
+				stack = append(stack, 1)
+			} else {
+				stack = append(stack, 0)
+			}
+		case OP_LT:
+			a := stack[len(stack)-2]
+			b := stack[len(stack)-1]
+			stack = stack[:len(stack)-2]
+
+			if a < b {
+				stack = append(stack, 1)
+			} else {
+				stack = append(stack, 0)
+			}
 		case OP_POP:
 			if len(stack) > 0 {
 				stack = stack[:len(stack)-1]
@@ -56,6 +80,10 @@ func runProgram(code []byte) {
 			stack[len(stack)-1] = b
 			stack[len(stack)-2] = a
 		case OP_PRINT:
+			if len(stack) == 0 {
+				fmt.Println("Warning: OP_PRINT with empty stack, ignoring")
+				break
+			}
 			val := stack[len(stack)-1]
 			fmt.Println(val)
 		case OP_NOP:
@@ -70,16 +98,29 @@ func runProgram(code []byte) {
 			cond := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 
-			if cond != 0 {
+			if cond == 0 {
 				ip = destiny
 			}
 		case OP_CALL:
 			destiny := int(code[ip])
 			ip++
+
+			funcArgs := compile.GetFuncArgs(destiny)
+			for i := len(funcArgs) - 1; i >= 0; i-- {
+				val := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+				slot := funcArgs[i]
+				storage[slot] = val
+			}
+
 			callStack = append(callStack, ip)
-			retStack = append(retStack, ip)
 			ip = destiny
 		case OP_RET:
+			if len(callStack) == 0 {
+				// fmt.Println("Warning: OP_RET with empty callStack, ignoring")
+				break
+			}
+
 			returnAddr := callStack[len(callStack)-1]
 			callStack = callStack[:len(callStack)-1]
 			ip = returnAddr
@@ -89,7 +130,6 @@ func runProgram(code []byte) {
 			val := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
 			storage[key] = val
-			fmt.Println("Armazenado:", val)
 		case OP_SLOAD:
 			key := int(code[ip])
 			ip++
@@ -100,7 +140,6 @@ func runProgram(code []byte) {
 			}
 
 			stack = append(stack, val)
-			fmt.Println("Carregado:", val)
 		case OP_MSTORE:
 			ip++
 			key := int(code[ip])
