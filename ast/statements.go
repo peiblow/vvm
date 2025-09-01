@@ -38,7 +38,7 @@ func (n IfStmt) stmt() {}
 
 type WhileStmt struct {
 	Condition Expr
-	Body      Stmt
+	Body      []Stmt
 }
 
 func (n WhileStmt) stmt() {}

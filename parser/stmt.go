@@ -116,7 +116,7 @@ func parse_while_loop_stmt(p *parser) ast.Stmt {
 	p.expect(lexer.OPEN_PAREN)
 	cond := parse_expr(p, defalt_bp)
 	p.expect(lexer.CLOSE_PAREN)
-	body := parse_block(p)
+	body := parse_block(p).Body
 
 	return ast.WhileStmt{
 		Condition: cond,

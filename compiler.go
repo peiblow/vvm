@@ -175,6 +175,21 @@ func (c *Compiler) compile_stmt(stmt ast.Stmt) {
 
 		endPos := len(c.Code)
 		c.Code[jmpExitPos-1] = byte(endPos)
+	case ast.WhileStmt:
+		condpos := len(c.Code)
+		c.compile_expr(s.Condition)
+		c.emit(OP_JMP_IF, 0)
+
+		jmpExitPos := len(c.Code)
+
+		for _, block := range s.Body {
+			c.compile_stmt(block)
+		}
+
+		c.emit(OP_JMP, byte(condpos))
+
+		endPos := len(c.Code)
+		c.Code[jmpExitPos-1] = byte(endPos)
 	default:
 		fmt.Println("Statement not found 404: ", s)
 	}
