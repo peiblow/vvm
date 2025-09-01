@@ -47,7 +47,7 @@ type ForStmt struct {
 	Init      Stmt
 	Condition Expr
 	Post      Stmt
-	Body      Stmt
+	Body      []Stmt
 }
 
 func (n ForStmt) stmt() {}

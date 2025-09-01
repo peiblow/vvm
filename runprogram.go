@@ -57,6 +57,7 @@ func RunProgram(compile *Compiler) {
 		case OP_LT:
 			a := stack[len(stack)-2]
 			b := stack[len(stack)-1]
+
 			stack = stack[:len(stack)-2]
 
 			if a < b {

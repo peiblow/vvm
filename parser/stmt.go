@@ -137,7 +137,7 @@ func parse_for_loop_stmt(p *parser) ast.Stmt {
 	post := parse_stmt(p)
 	p.expect(lexer.CLOSE_PAREN)
 
-	body := parse_block(p)
+	body := parse_block(p).Body
 
 	return ast.ForStmt{
 		Init:      init,

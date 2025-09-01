@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/peiblow/vvm/ast"
 )
 
@@ -152,10 +154,29 @@ func (c *Compiler) compile_stmt(stmt ast.Stmt) {
 			endPos := len(c.Code)
 			c.Code[jmpPos+1] = byte(endPos)
 		} else {
-
 			endPos := len(c.Code)
 			c.Code[jmpIfPos+1] = byte(endPos)
 		}
+	case ast.ForStmt:
+		c.compile_stmt(s.Init)
+
+		condpos := len(c.Code)
+		c.compile_expr(s.Condition)
+		c.emit(OP_JMP_IF, 0)
+
+		jmpExitPos := len(c.Code)
+
+		for _, block := range s.Body {
+			c.compile_stmt(block)
+		}
+
+		c.compile_stmt(s.Post)
+		c.emit(OP_JMP, byte(condpos))
+
+		endPos := len(c.Code)
+		c.Code[jmpExitPos-1] = byte(endPos)
+	default:
+		fmt.Println("Statement not found 404: ", s)
 	}
 }
 
@@ -213,9 +234,14 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 		for _, arg := range e.Arguments {
 			c.compile_expr(arg)
 		}
+
 		if calle, ok := e.Calle.(ast.SymbolExpr); ok {
-			addr := c.Functions[calle.Value]
-			c.emit(OP_CALL, byte(addr.Addr))
+			if calle.Value == "print" {
+				c.emit(OP_PRINT)
+			} else {
+				addr := c.Functions[calle.Value]
+				c.emit(OP_CALL, byte(addr.Addr))
+			}
 		}
 	case ast.PrefixExpr:
 		c.compile_expr(e.RightExpr)
