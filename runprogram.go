@@ -5,11 +5,11 @@ import "fmt"
 func RunProgram(compile *Compiler) {
 	code := compile.Code
 
-	stack := []int{}
+	stack := []interface{}{}
 	callStack := []int{}
 
-	storage := make(map[int]int)
-	mstorage := make(map[int]int)
+	storage := make(map[int]interface{})
+	mstorage := make(map[int]interface{})
 
 	ip := 0
 	for {
@@ -17,6 +17,11 @@ func RunProgram(compile *Compiler) {
 		ip++
 
 		switch op {
+		case OP_CONST:
+			idx := int(code[ip])
+			ip++
+			val := compile.ConstPool[idx]
+			stack = append(stack, val)
 		case OP_PUSH:
 			val := int(code[ip])
 			ip++
@@ -25,28 +30,42 @@ func RunProgram(compile *Compiler) {
 			if len(stack) < 2 {
 				panic("stack underflow on ADD")
 			}
-			a := stack[len(stack)-1]
-			b := stack[len(stack)-2]
-			stack = stack[:len(stack)-2]
-			stack = append(stack, a+b)
+
+			b := stack[len(stack)-1]
+			a := stack[len(stack)-2]
+
+			switch av := a.(type) {
+			case int:
+				if bv, ok := b.(int); ok {
+					stack = stack[:len(stack)-2]
+					stack = append(stack, av+bv)
+				}
+			case string:
+				if bv, ok := b.(string); ok {
+					stack = stack[:len(stack)-2]
+					stack = append(stack, av+bv)
+				}
+			default:
+				panic("unsupported ADD type")
+			}
 		case OP_SUB:
-			a := stack[len(stack)-1]
-			b := stack[len(stack)-2]
+			a := stack[len(stack)-1].(int)
+			b := stack[len(stack)-2].(int)
 			stack = stack[:len(stack)-2]
 			stack = append(stack, a-b)
 		case OP_MUL:
-			a := stack[len(stack)-1]
-			b := stack[len(stack)-2]
+			a := stack[len(stack)-1].(int)
+			b := stack[len(stack)-2].(int)
 			stack = stack[:len(stack)-2]
 			stack = append(stack, a*b)
 		case OP_DIV:
-			a := stack[len(stack)-1]
-			b := stack[len(stack)-2]
+			a := stack[len(stack)-1].(int)
+			b := stack[len(stack)-2].(int)
 			stack = stack[:len(stack)-2]
 			stack = append(stack, a/b)
 		case OP_GT:
-			a := stack[len(stack)-2]
-			b := stack[len(stack)-1]
+			a := stack[len(stack)-2].(int)
+			b := stack[len(stack)-1].(int)
 			stack = stack[:len(stack)-2]
 
 			if a > b {
@@ -54,13 +73,34 @@ func RunProgram(compile *Compiler) {
 			} else {
 				stack = append(stack, 0)
 			}
+		case OP_GT_EQ:
+			a := stack[len(stack)-2].(int)
+			b := stack[len(stack)-1].(int)
+			stack = stack[:len(stack)-2]
+
+			if a >= b {
+				stack = append(stack, 1)
+			} else {
+				stack = append(stack, 0)
+			}
 		case OP_LT:
-			a := stack[len(stack)-2]
-			b := stack[len(stack)-1]
+			a := stack[len(stack)-2].(int)
+			b := stack[len(stack)-1].(int)
 
 			stack = stack[:len(stack)-2]
 
 			if a < b {
+				stack = append(stack, 1)
+			} else {
+				stack = append(stack, 0)
+			}
+		case OP_LT_EQ:
+			a := stack[len(stack)-2].(int)
+			b := stack[len(stack)-1].(int)
+
+			stack = stack[:len(stack)-2]
+
+			if a <= b {
 				stack = append(stack, 1)
 			} else {
 				stack = append(stack, 0)
@@ -125,11 +165,24 @@ func RunProgram(compile *Compiler) {
 			returnAddr := callStack[len(callStack)-1]
 			callStack = callStack[:len(callStack)-1]
 			ip = returnAddr
+		case OP_ACCESS:
+			idx := stack[len(stack)-1].(int)
+			arr := stack[len(stack)-2].([]interface{})
+			stack = stack[:len(stack)-2]
+
+			if idx < 0 || idx >= len(arr) {
+				panic(fmt.Sprintf("Array index out of bounds: %d", idx))
+			}
+
+			val := arr[idx]
+			stack = append(stack, val)
 		case OP_STORE:
 			key := int(code[ip])
 			ip++
+
 			val := stack[len(stack)-1]
 			stack = stack[:len(stack)-1]
+
 			storage[key] = val
 		case OP_SLOAD:
 			key := int(code[ip])

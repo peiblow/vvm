@@ -14,6 +14,7 @@ type FunctionMeta struct {
 type Compiler struct {
 	Code         []byte
 	Symbols      map[string]int
+	ConstPool    []interface{}
 	Functions    map[string]FunctionMeta
 	FunctionName map[int]string
 	NextSlot     int
@@ -24,6 +25,7 @@ func NewCompiler() *Compiler {
 	return &Compiler{
 		Code:         []byte{},
 		Symbols:      make(map[string]int),
+		ConstPool:    make([]interface{}, 0),
 		Functions:    make(map[string]FunctionMeta),
 		FunctionName: make(map[int]string),
 		NextSlot:     0,
@@ -119,6 +121,15 @@ func (c *Compiler) compile_stmt(stmt ast.Stmt) {
 		} else {
 			c.compile_stmt(s.Body)
 		}
+
+		switch t := s.ReturnType.(type) {
+		case ast.SymbolType:
+			if t.Name == "void" {
+				c.emit(OP_RET)
+			}
+		case ast.ArrayType:
+		}
+
 		c.isInFunction = prevInFunction
 	case ast.IfStmt:
 		c.compile_expr(s.Condition)
@@ -199,6 +210,39 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 	switch e := expr.(type) {
 	case ast.NumberExpr:
 		c.emit(OP_PUSH, byte(e.Value))
+	case ast.StringExpr:
+		idx := len(c.ConstPool)
+		c.ConstPool = append(c.ConstPool, e.Value)
+		c.emit(OP_CONST, byte(idx))
+	case ast.ArrayLiteralExpr:
+		items := make([]interface{}, len(e.Items))
+		for i, item := range e.Items {
+			switch it := item.(type) {
+			case ast.NumberExpr:
+				items[i] = it.Value
+			case ast.StringExpr:
+				items[i] = it.Value
+			case ast.ArrayLiteralExpr:
+				inner := make([]interface{}, len(it.Items))
+				for j, innerItem := range it.Items {
+					switch ii := innerItem.(type) {
+					case ast.NumberExpr:
+						inner[j] = ii.Value
+					case ast.StringExpr:
+						inner[j] = ii.Value
+					default:
+						panic("Unsupported nested array item")
+					}
+				}
+				items[i] = inner
+			default:
+				panic("Unsupported array item type")
+			}
+		}
+
+		idx := len(c.ConstPool)
+		c.ConstPool = append(c.ConstPool, items)
+		c.emit(OP_CONST, byte(idx))
 	case ast.SymbolExpr:
 		slot := c.Symbols[e.Value]
 		c.emit(OP_SLOAD, byte(slot))
@@ -244,6 +288,10 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 			c.emit(OP_LT)
 		case "==":
 			c.emit(OP_EQ)
+		case ">=":
+			c.emit(OP_GT_EQ)
+		case "<=":
+			c.emit(OP_LT_EQ)
 		}
 	case ast.CallExpr:
 		for _, arg := range e.Arguments {
@@ -278,5 +326,10 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 			}
 			c.emit(OP_STORE, byte(slot))
 		}
+	case ast.ArrayAccessItemExpr:
+		c.compile_expr(e.Array)
+		c.compile_expr(e.Index)
+
+		c.emit(OP_ACCESS)
 	}
 }
