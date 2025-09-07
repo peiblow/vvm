@@ -57,7 +57,7 @@ func main() {
 	// 	}
 	// 	fmt.Print(name)
 	// 	switch op {
-	// 	case OP_PUSH, OP_STORE, OP_SLOAD, OP_MSTORE, OP_MLOAD, OP_CALL, OP_JMP, OP_JMP_IF:
+	// 	case OP_PUSH, OP_STORE, OP_SLOAD, OP_MSTORE, OP_MLOAD, OP_CALL, OP_JMP, OP_JMP_IF, OP_CONST:
 	// 		i++
 	// 		fmt.Printf(" %d", cmpl.Code[i])
 	// 	}

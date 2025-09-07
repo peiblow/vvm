@@ -173,7 +173,13 @@ func parse_obj_assignment_expr(p *parser) ast.Expr {
 func parse_member_expr(p *parser, callee ast.Expr, bp binding_power) ast.Expr {
 	p.expect(lexer.DOT)
 
-	prop := parse_expr(p, defalt_bp)
+	if p.currentTokenType() != lexer.IDENTIFIER {
+		panic(fmt.Sprintf("Expected identifier after '.', got %v", p.currentToken().Literal))
+	}
+
+	prop := ast.SymbolExpr{
+		Value: p.advance().Literal,
+	}
 
 	return ast.MemberExpr{
 		Object:   callee,

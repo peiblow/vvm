@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+)
 
 func RunProgram(compile *Compiler) {
 	code := compile.Code
@@ -36,16 +40,32 @@ func RunProgram(compile *Compiler) {
 
 			switch av := a.(type) {
 			case int:
-				if bv, ok := b.(int); ok {
-					stack = append(stack, av+bv)
+				switch bv := b.(type) {
+				case int:
+					push(&stack, av+bv)
+				case string:
+					push(&stack, strconv.Itoa(av)+bv)
+				default:
+					panic("unsupported ADD type")
 				}
+
 			case string:
-				if bv, ok := b.(string); ok {
-					stack = append(stack, av+bv)
+				switch bv := b.(type) {
+				case int:
+					push(&stack, av+strconv.Itoa(bv))
+				case string:
+					push(&stack, av+bv)
+				case float64:
+					push(&stack, av+strconv.FormatFloat(bv, 'f', 0, 64))
+				default:
+					fmt.Println(reflect.TypeOf(bv))
+					panic("unsupported ADD type")
 				}
+
 			default:
 				panic("unsupported ADD type")
 			}
+
 		case OP_SUB:
 			b := pop(&stack, "OP_SUB").(int)
 			a := pop(&stack, "OP_SUB").(int)
