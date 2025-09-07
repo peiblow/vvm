@@ -95,6 +95,9 @@ func (c *Compiler) compile_stmt(stmt ast.Stmt) {
 		prevInFunction := c.isInFunction
 		c.isInFunction = true
 
+		skipFuncPos := len(c.Code)
+		c.emit(OP_JMP, 0)
+
 		funcMeta := FunctionMeta{
 			Addr: len(c.Code),
 			Args: []int{},
@@ -127,9 +130,12 @@ func (c *Compiler) compile_stmt(stmt ast.Stmt) {
 			if t.Name == "void" {
 				c.emit(OP_RET)
 			}
-		case ast.ArrayType:
+		default:
+			c.emit(OP_REQUIRE)
 		}
 
+		afterFuncPos := len(c.Code)
+		c.Code[skipFuncPos+1] = byte(afterFuncPos)
 		c.isInFunction = prevInFunction
 	case ast.IfStmt:
 		c.compile_expr(s.Condition)
@@ -214,6 +220,9 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 		idx := len(c.ConstPool)
 		c.ConstPool = append(c.ConstPool, e.Value)
 		c.emit(OP_CONST, byte(idx))
+	case ast.SymbolExpr:
+		slot := c.Symbols[e.Value]
+		c.emit(OP_SLOAD, byte(slot))
 	case ast.ArrayLiteralExpr:
 		items := make([]interface{}, len(e.Items))
 		for i, item := range e.Items {
@@ -243,9 +252,6 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 		idx := len(c.ConstPool)
 		c.ConstPool = append(c.ConstPool, items)
 		c.emit(OP_CONST, byte(idx))
-	case ast.SymbolExpr:
-		slot := c.Symbols[e.Value]
-		c.emit(OP_SLOAD, byte(slot))
 	case ast.AssignmentExpr:
 		if objExpr, ok := e.Right.(ast.ObjectAssignmentExpr); ok {
 			obj := make(map[string]interface{})
@@ -368,16 +374,11 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 	case ast.MemberExpr:
 		c.compile_expr(e.Object)
 
-		switch p := e.Property.(type) {
-		case ast.SymbolExpr:
+		if prop, ok := e.Property.(ast.SymbolExpr); ok {
 			idx := len(c.ConstPool)
-			c.ConstPool = append(c.ConstPool, p.Value)
+			c.ConstPool = append(c.ConstPool, prop.Value)
 			c.emit(OP_CONST, byte(idx))
-		case ast.StringExpr:
-			idx := len(c.ConstPool)
-			c.ConstPool = append(c.ConstPool, p.Value)
-			c.emit(OP_CONST, byte(idx))
-		default:
+		} else {
 			c.compile_expr(e.Property)
 		}
 
