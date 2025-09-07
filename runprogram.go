@@ -31,42 +31,39 @@ func RunProgram(compile *Compiler) {
 				panic("stack underflow on ADD")
 			}
 
-			b := stack[len(stack)-1]
-			a := stack[len(stack)-2]
+			a := pop(&stack, "OP_ADD")
+			b := pop(&stack, "OP_ADD")
 
 			switch av := a.(type) {
 			case int:
 				if bv, ok := b.(int); ok {
-					stack = stack[:len(stack)-2]
 					stack = append(stack, av+bv)
 				}
 			case string:
 				if bv, ok := b.(string); ok {
-					stack = stack[:len(stack)-2]
 					stack = append(stack, av+bv)
 				}
 			default:
 				panic("unsupported ADD type")
 			}
 		case OP_SUB:
-			a := stack[len(stack)-1].(int)
-			b := stack[len(stack)-2].(int)
-			stack = stack[:len(stack)-2]
+			b := pop(&stack, "OP_SUB").(int)
+			a := pop(&stack, "OP_SUB").(int)
+
 			stack = append(stack, a-b)
 		case OP_MUL:
-			a := stack[len(stack)-1].(int)
-			b := stack[len(stack)-2].(int)
-			stack = stack[:len(stack)-2]
+			b := pop(&stack, "OP_MUL").(int)
+			a := pop(&stack, "OP_MUL").(int)
+
 			stack = append(stack, a*b)
 		case OP_DIV:
-			a := stack[len(stack)-1].(int)
-			b := stack[len(stack)-2].(int)
-			stack = stack[:len(stack)-2]
+			b := pop(&stack, "OP_DIV").(int)
+			a := pop(&stack, "OP_DIV").(int)
+
 			stack = append(stack, a/b)
 		case OP_GT:
-			a := stack[len(stack)-2].(int)
-			b := stack[len(stack)-1].(int)
-			stack = stack[:len(stack)-2]
+			b := pop(&stack, "OP_GT").(int)
+			a := pop(&stack, "OP_GT").(int)
 
 			if a > b {
 				stack = append(stack, 1)
@@ -74,9 +71,8 @@ func RunProgram(compile *Compiler) {
 				stack = append(stack, 0)
 			}
 		case OP_GT_EQ:
-			a := stack[len(stack)-2].(int)
-			b := stack[len(stack)-1].(int)
-			stack = stack[:len(stack)-2]
+			b := pop(&stack, "OP_GT_EQ").(int)
+			a := pop(&stack, "OP_GT_EQ").(int)
 
 			if a >= b {
 				stack = append(stack, 1)
@@ -84,10 +80,8 @@ func RunProgram(compile *Compiler) {
 				stack = append(stack, 0)
 			}
 		case OP_LT:
-			a := stack[len(stack)-2].(int)
-			b := stack[len(stack)-1].(int)
-
-			stack = stack[:len(stack)-2]
+			b := pop(&stack, "OP_LT").(int)
+			a := pop(&stack, "OP_LT").(int)
 
 			if a < b {
 				stack = append(stack, 1)
@@ -95,25 +89,23 @@ func RunProgram(compile *Compiler) {
 				stack = append(stack, 0)
 			}
 		case OP_LT_EQ:
-			a := stack[len(stack)-2].(int)
-			b := stack[len(stack)-1].(int)
-
-			stack = stack[:len(stack)-2]
+			b := pop(&stack, "OP_LT_EQ").(int)
+			a := pop(&stack, "OP_LT_EQ").(int)
 
 			if a <= b {
 				stack = append(stack, 1)
 			} else {
 				stack = append(stack, 0)
 			}
-		case OP_POP:
-			if len(stack) > 0 {
-				stack = stack[:len(stack)-1]
+		case OP_DIFF:
+			b := pop(&stack, "OP_DIFF")
+			a := pop(&stack, "OP_DIFF")
+
+			if a != b {
+				stack = append(stack, 1)
 			} else {
 				fmt.Println("Erro: Empty stack")
 			}
-		case OP_DUP:
-			val := stack[len(stack)-1]
-			stack = append(stack, val)
 		case OP_SWAP:
 			a := stack[len(stack)-1]
 			b := stack[len(stack)-2]
@@ -125,7 +117,7 @@ func RunProgram(compile *Compiler) {
 				fmt.Println("Warning: OP_PRINT with empty stack, ignoring")
 				break
 			}
-			val := stack[len(stack)-1]
+			val := pop(&stack, "OP_PRINT")
 			fmt.Println(val)
 		case OP_NOP:
 		case OP_JMP:
@@ -136,8 +128,7 @@ func RunProgram(compile *Compiler) {
 			destiny := int(code[ip])
 			ip++
 
-			cond := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
+			cond := pop(&stack, "OP_JMP_IF")
 
 			if cond == 0 {
 				ip = destiny
@@ -148,8 +139,7 @@ func RunProgram(compile *Compiler) {
 
 			funcArgs := compile.GetFuncArgs(destiny)
 			for i := len(funcArgs) - 1; i >= 0; i-- {
-				val := stack[len(stack)-1]
-				stack = stack[:len(stack)-1]
+				val := pop(&stack, "OP_CALL")
 				slot := funcArgs[i]
 				storage[slot] = val
 			}
@@ -166,22 +156,73 @@ func RunProgram(compile *Compiler) {
 			callStack = callStack[:len(callStack)-1]
 			ip = returnAddr
 		case OP_ACCESS:
-			idx := stack[len(stack)-1].(int)
-			arr := stack[len(stack)-2].([]interface{})
-			stack = stack[:len(stack)-2]
+			key := pop(&stack, "OP_ACCESS")
+			target := pop(&stack, "OP_ACCESS")
 
-			if idx < 0 || idx >= len(arr) {
-				panic(fmt.Sprintf("Array index out of bounds: %d", idx))
+			switch obj := target.(type) {
+			case []interface{}: // array access
+				idx, ok := key.(int)
+				if !ok {
+					panic(fmt.Sprintf("Array index must be int, got %T", key))
+				}
+				if idx < 0 || idx >= len(obj) {
+					panic(fmt.Sprintf("Array index out of bounds: %d", idx))
+				}
+				push(&stack, obj[idx])
+			case map[string]interface{}: // object access
+				prop, ok := key.(string)
+				if !ok {
+					panic(fmt.Sprintf("Object property key must be string, got %T", key))
+				}
+				val, exists := obj[prop]
+				if !exists {
+					panic(fmt.Sprintf("Property '%s' not found in object", prop))
+				}
+
+				push(&stack, val)
+			default:
+				panic(fmt.Sprintf("OP_ACCESS: unsupported target type %T", target))
 			}
+		case OP_GET_PROPERTY:
+			key := pop(&stack, "OP_GET_PROPERTY")
+			target := pop(&stack, "OP_GET_PROPERTY")
 
-			val := arr[idx]
-			stack = append(stack, val)
+			switch obj := target.(type) {
+			case map[string]interface{}:
+				prop, ok := key.(string)
+				if !ok {
+					panic(fmt.Sprintf("Expected property key as string, got %T", key))
+				}
+
+				val, exists := obj[prop]
+				if !exists {
+					panic(fmt.Sprintf("Property '%s' not found in object", prop))
+				}
+
+				push(&stack, val)
+				// fmt.Printf("[DEBUG] OP_GET_PROPERTY: %s = %#v\n", prop, val)
+
+			default:
+				panic(fmt.Sprintf("OP_GET_PROPERTY: unsupported target type %T", target))
+			}
+		case OP_NULL:
+			stack = append(stack, nil)
+		case OP_LENGTH:
+			arr := pop(&stack, "OP_LENGTH")
+
+			switch v := arr.(type) {
+			case string:
+				stack = append(stack, len(v))
+			case []interface{}:
+				stack = append(stack, len(v))
+			default:
+				panic(fmt.Sprintf("OP_LENGTH: invalid type %T", v))
+			}
 		case OP_STORE:
 			key := int(code[ip])
 			ip++
 
-			val := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
+			val := pop(&stack, "OP_STORE")
 
 			storage[key] = val
 		case OP_SLOAD:
@@ -197,8 +238,7 @@ func RunProgram(compile *Compiler) {
 		case OP_MSTORE:
 			ip++
 			key := int(code[ip])
-			val := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
+			val := pop(&stack, "OP_MSTORE")
 			mstorage[key] = val
 		case OP_MLOAD:
 			key := int(code[ip])
@@ -213,12 +253,31 @@ func RunProgram(compile *Compiler) {
 			ip++
 			key := int(code[ip])
 			delete(storage, key)
+		case OP_TRANSFER:
+			fmt.Println("Transfer has been made :D")
+		case OP_BALANCE_OF:
+			fmt.Println("BalanceOf has been made :D")
+		case OP_REQUIRE:
+			fmt.Println("Require has been made :D")
 		case OP_HALT:
-			fmt.Println("Fim do programa.")
+			fmt.Println("End of program.")
 			return
 		default:
 			fmt.Println("Opcode desconhecido:", op)
 			return
 		}
 	}
+}
+
+func pop(stack *[]interface{}, context string) interface{} {
+	if len(*stack) == 0 {
+		panic(fmt.Sprintf("stack underflow while executing %s", context))
+	}
+	val := (*stack)[len(*stack)-1]
+	*stack = (*stack)[:len(*stack)-1]
+	return val
+}
+
+func push(stack *[]interface{}, val interface{}) {
+	*stack = append(*stack, val)
 }

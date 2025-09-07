@@ -30,6 +30,10 @@ type BinaryExpr struct {
 
 func (n BinaryExpr) expr() {}
 
+type NullExpr struct{}
+
+func (n NullExpr) expr() {}
+
 type PrefixExpr struct {
 	Operator  lexer.Token
 	RightExpr Expr

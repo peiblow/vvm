@@ -247,7 +247,27 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 		slot := c.Symbols[e.Value]
 		c.emit(OP_SLOAD, byte(slot))
 	case ast.AssignmentExpr:
-		c.compile_expr(e.Right)
+		if objExpr, ok := e.Right.(ast.ObjectAssignmentExpr); ok {
+			obj := make(map[string]interface{})
+			for _, property := range objExpr.Fields {
+				key := property.Key.(ast.SymbolExpr).Value
+				switch v := property.Value.(type) {
+				case ast.StringExpr:
+					obj[key] = v.Value
+				case ast.NumberExpr:
+					obj[key] = v.Value
+				default:
+					panic(fmt.Sprintf("unsupported value type in object: %T", v))
+				}
+			}
+
+			idx := len(c.ConstPool)
+			c.ConstPool = append(c.ConstPool, obj)
+			c.emit(OP_CONST, byte(idx))
+		} else {
+			c.compile_expr(e.Right)
+		}
+
 		var symName string
 		switch l := e.Left.(type) {
 		case ast.SymbolExpr:
@@ -275,6 +295,7 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 		c.compile_expr(e.Right)
 		switch e.Operator.Literal {
 		case "+":
+			c.emit(OP_SWAP)
 			c.emit(OP_ADD)
 		case "-":
 			c.emit(OP_SUB)
@@ -292,6 +313,10 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 			c.emit(OP_GT_EQ)
 		case "<=":
 			c.emit(OP_LT_EQ)
+		case "!=":
+			c.emit(OP_DIFF)
+		case "+=":
+			c.emit(OP_PLUS_EQ)
 		}
 	case ast.CallExpr:
 		for _, arg := range e.Arguments {
@@ -299,9 +324,18 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 		}
 
 		if calle, ok := e.Calle.(ast.SymbolExpr); ok {
-			if calle.Value == "print" {
+			switch calle.Value {
+			case "print":
 				c.emit(OP_PRINT)
-			} else {
+			case "length":
+				c.emit(OP_LENGTH)
+			case "_transfer":
+				c.emit(OP_TRANSFER)
+			case "balanceOf":
+				c.emit(OP_BALANCE_OF)
+			case "require":
+				c.emit(OP_REQUIRE)
+			default:
 				addr := c.Functions[calle.Value]
 				c.emit(OP_CALL, byte(addr.Addr))
 			}
@@ -331,5 +365,24 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 		c.compile_expr(e.Index)
 
 		c.emit(OP_ACCESS)
+	case ast.MemberExpr:
+		c.compile_expr(e.Object)
+
+		switch p := e.Property.(type) {
+		case ast.SymbolExpr:
+			idx := len(c.ConstPool)
+			c.ConstPool = append(c.ConstPool, p.Value)
+			c.emit(OP_CONST, byte(idx))
+		case ast.StringExpr:
+			idx := len(c.ConstPool)
+			c.ConstPool = append(c.ConstPool, p.Value)
+			c.emit(OP_CONST, byte(idx))
+		default:
+			c.compile_expr(e.Property)
+		}
+
+		c.emit(OP_GET_PROPERTY)
+	case ast.NullExpr:
+		c.emit(OP_NULL)
 	}
 }

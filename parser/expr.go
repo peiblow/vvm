@@ -56,6 +56,11 @@ func parse_primary_expr(p *parser) ast.Expr {
 	}
 }
 
+func parse_null_expr(p *parser) ast.Expr {
+	p.advance()
+	return ast.NullExpr{}
+}
+
 func parse_incdec_expr(p *parser, left ast.Expr, bp binding_power) ast.Expr {
 	op := p.advance()
 	return ast.IncDecExpr{
