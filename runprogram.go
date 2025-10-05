@@ -48,7 +48,6 @@ func RunProgram(compile *Compiler) {
 				default:
 					panic("unsupported ADD type")
 				}
-
 			case string:
 				switch bv := b.(type) {
 				case int:
@@ -61,7 +60,6 @@ func RunProgram(compile *Compiler) {
 					fmt.Println(reflect.TypeOf(bv))
 					panic("unsupported ADD type")
 				}
-
 			default:
 				panic("unsupported ADD type")
 			}
@@ -225,6 +223,24 @@ func RunProgram(compile *Compiler) {
 			default:
 				panic(fmt.Sprintf("OP_GET_PROPERTY: unsupported target type %T", target))
 			}
+		case OP_SET_PROPERTY:
+			value := pop(&stack, "SET_PROPERTY")
+			key := pop(&stack, "SET_PROPERTY")
+			object := pop(&stack, "SET_PROPERTY")
+
+			objMap, ok := object.(map[string]interface{})
+
+			if !ok {
+				panic(fmt.Sprintf("SET_PROPERTY expected map[string]interface{}, got %T", object))
+			}
+
+			keyStr, ok := key.(string)
+			if !ok {
+				panic(fmt.Sprintf("SET_PROPERTY expected string key, got %T", key))
+			}
+
+			objMap[keyStr] = value
+			push(&stack, objMap)
 		case OP_NULL:
 			stack = append(stack, nil)
 		case OP_LENGTH:
@@ -273,6 +289,8 @@ func RunProgram(compile *Compiler) {
 			ip++
 			key := int(code[ip])
 			delete(storage, key)
+		case OP_PUSH_OBJECT:
+			push(&stack, make(map[string]interface{}))
 		case OP_TRANSFER:
 			fmt.Println("Transfer has been made :D")
 		case OP_BALANCE_OF:

@@ -49,5 +49,8 @@ const (
 	OP_REQUIRE      = 0x54 // verifica saldo de endereço
 	OP_GET_PROPERTY = 0x55
 
+	OP_PUSH_OBJECT  = 0x60 // create an empty object in stack
+	OP_SET_PROPERTY = 0x61 // set a property in this context
+
 	OP_HALT = 0x00 // Fim do programa
 )

@@ -71,22 +71,26 @@ const (
 	WHILE
 	FOR
 	RETURN
+	THIS
+	CONSTRUCTOR
 
 	// Misc
 	NUM_TOKENS
 )
 
 var reserved_lu map[string]TokenType = map[string]TokenType{
-	"func":     FUNC,
-	"if":       IF,
-	"else":     ELSE,
-	"foreach":  FOREACH,
-	"while":    WHILE,
-	"for":      FOR,
-	"const":    CONST,
-	"let":      LET,
-	"contract": CONTRACT,
-	"return":   RETURN,
+	"func":        FUNC,
+	"if":          IF,
+	"else":        ELSE,
+	"foreach":     FOREACH,
+	"while":       WHILE,
+	"for":         FOR,
+	"const":       CONST,
+	"let":         LET,
+	"contract":    CONTRACT,
+	"return":      RETURN,
+	"constructor": CONSTRUCTOR,
+	"this":        THIS,
 }
 
 type Token struct {

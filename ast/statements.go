@@ -74,3 +74,10 @@ type ReturnStmt struct {
 }
 
 func (n ReturnStmt) stmt() {}
+
+type ConstructorStmt struct {
+	Arguments Stmt
+	Body      BlockStmt
+}
+
+func (n ConstructorStmt) stmt() {}

@@ -181,3 +181,15 @@ func parse_return_stmt(p *parser) ast.Stmt {
 		Value: value,
 	}
 }
+
+func parse_constructor_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.CONSTRUCTOR)
+
+	args := parse_arguments(p)
+	body := parse_block(p)
+
+	return ast.ConstructorStmt{
+		Arguments: args,
+		Body:      body,
+	}
+}

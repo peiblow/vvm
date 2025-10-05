@@ -21,6 +21,10 @@ type SymbolExpr struct {
 
 func (n SymbolExpr) expr() {}
 
+type ThisExpr struct{}
+
+func (n ThisExpr) expr() {}
+
 // Complex Expressions
 type BinaryExpr struct {
 	Left     Expr

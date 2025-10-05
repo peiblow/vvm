@@ -207,6 +207,23 @@ func (c *Compiler) compile_stmt(stmt ast.Stmt) {
 
 		endPos := len(c.Code)
 		c.Code[jmpExitPos-1] = byte(endPos)
+	case ast.ConstructorStmt:
+		c.emit(OP_PUSH_OBJECT)
+		c.emit(OP_STORE, 0)
+
+		if block, ok := s.Arguments.(ast.BlockStmt); ok {
+			for _, arg := range block.Body {
+				if exprStmt, ok := arg.(ast.ExpressionStmt); ok {
+					if sym, ok := exprStmt.Expression.(ast.SymbolExpr); ok {
+						slot := c.NextSlot
+						c.Symbols[sym.Value] = slot
+						c.NextSlot++
+					}
+				}
+			}
+		}
+
+		c.compile_block(s.Body)
 	default:
 		fmt.Println("Statement not found 404: ", s)
 	}
@@ -284,6 +301,13 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 			} else {
 				panic("Expected SymbolExpr in ExpressionStmt for assignment left")
 			}
+		case ast.MemberExpr:
+			c.emit(OP_SLOAD, 0)
+			idx := len(c.ConstPool)
+			c.ConstPool = append(c.ConstPool, l.Property.(ast.SymbolExpr).Value)
+			c.emit(OP_CONST, byte(idx))
+			c.compile_expr(e.Right)
+			c.emit(OP_SET_PROPERTY)
 		default:
 			panic("Unsupported assignment left expression type")
 		}
@@ -372,7 +396,11 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 
 		c.emit(OP_ACCESS)
 	case ast.MemberExpr:
-		c.compile_expr(e.Object)
+		if _, ok := e.Object.(ast.ThisExpr); ok {
+			c.emit(OP_SLOAD, 0)
+		} else {
+			c.compile_expr(e.Object)
+		}
 
 		if prop, ok := e.Property.(ast.SymbolExpr); ok {
 			idx := len(c.ConstPool)
@@ -383,6 +411,8 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 		}
 
 		c.emit(OP_GET_PROPERTY)
+	case ast.ThisExpr:
+		c.emit(OP_SLOAD, 0)
 	case ast.NullExpr:
 		c.emit(OP_NULL)
 	}

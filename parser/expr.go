@@ -61,6 +61,12 @@ func parse_null_expr(p *parser) ast.Expr {
 	return ast.NullExpr{}
 }
 
+func parse_this_expr(p *parser) ast.Expr {
+	p.expect(lexer.THIS)
+
+	return ast.ThisExpr{}
+}
+
 func parse_incdec_expr(p *parser, left ast.Expr, bp binding_power) ast.Expr {
 	op := p.advance()
 	return ast.IncDecExpr{
