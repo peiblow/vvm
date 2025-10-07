@@ -68,7 +68,6 @@ func skipHandler(lex *lexer, regex *regexp.Regexp) {
 func commentHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindStringIndex(lex.remainder())
 	if match != nil {
-		// Advance past the entire comment.
 		lex.advanceN(match[1])
 		lex.line++
 	}

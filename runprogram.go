@@ -37,7 +37,6 @@ func RunProgram(compile *Compiler) {
 
 			a := pop(&stack, "OP_ADD")
 			b := pop(&stack, "OP_ADD")
-
 			switch av := a.(type) {
 			case int:
 				switch bv := b.(type) {
@@ -46,7 +45,7 @@ func RunProgram(compile *Compiler) {
 				case string:
 					push(&stack, strconv.Itoa(av)+bv)
 				default:
-					panic("unsupported ADD type")
+					panic("[INT] unsupported ADD type")
 				}
 			case string:
 				switch bv := b.(type) {
@@ -58,10 +57,10 @@ func RunProgram(compile *Compiler) {
 					push(&stack, av+strconv.FormatFloat(bv, 'f', 0, 64))
 				default:
 					fmt.Println(reflect.TypeOf(bv))
-					panic("unsupported ADD type")
+					panic("[STR] unsupported ADD type")
 				}
 			default:
-				panic("unsupported ADD type")
+				panic("[DFT] unsupported ADD type")
 			}
 
 		case OP_SUB:
@@ -271,6 +270,7 @@ func RunProgram(compile *Compiler) {
 			}
 
 			stack = append(stack, val)
+			fmt.Println(stack...)
 		case OP_MSTORE:
 			ip++
 			key := int(code[ip])

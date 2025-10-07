@@ -279,6 +279,9 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 					obj[key] = v.Value
 				case ast.NumberExpr:
 					obj[key] = v.Value
+				case ast.SymbolExpr:
+					symName := c.Symbols[v.Value]
+					obj[key] = c.ConstPool[symName]
 				default:
 					panic(fmt.Sprintf("unsupported value type in object: %T", v))
 				}
@@ -302,7 +305,13 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 				panic("Expected SymbolExpr in ExpressionStmt for assignment left")
 			}
 		case ast.MemberExpr:
-			c.emit(OP_SLOAD, 0)
+			// TODO: fix constructor when there is another object declaration
+			if _, ok := l.Object.(ast.ThisExpr); ok {
+				c.emit(OP_SLOAD, 0)
+			} else if se, ok := l.Object.(ast.SymbolExpr); ok {
+				c.emit(OP_SLOAD, byte(c.Symbols[se.Value]))
+			}
+
 			idx := len(c.ConstPool)
 			c.ConstPool = append(c.ConstPool, l.Property.(ast.SymbolExpr).Value)
 			c.emit(OP_CONST, byte(idx))
