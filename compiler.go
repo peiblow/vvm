@@ -223,6 +223,7 @@ func (c *Compiler) compile_stmt(stmt ast.Stmt) {
 			}
 		}
 
+		c.NextSlot++
 		c.compile_block(s.Body)
 	default:
 		fmt.Println("Statement not found 404: ", s)
@@ -305,7 +306,6 @@ func (c *Compiler) compile_expr(expr ast.Expr) {
 				panic("Expected SymbolExpr in ExpressionStmt for assignment left")
 			}
 		case ast.MemberExpr:
-			// TODO: fix constructor when there is another object declaration
 			if _, ok := l.Object.(ast.ThisExpr); ok {
 				c.emit(OP_SLOAD, 0)
 			} else if se, ok := l.Object.(ast.SymbolExpr); ok {

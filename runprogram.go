@@ -270,7 +270,6 @@ func RunProgram(compile *Compiler) {
 			}
 
 			stack = append(stack, val)
-			fmt.Println(stack...)
 		case OP_MSTORE:
 			ip++
 			key := int(code[ip])
