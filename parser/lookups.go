@@ -83,7 +83,6 @@ func createTokenLookups() {
 	nud(lexer.OPEN_BRACKET, parse_literal_array_expr)
 	nud(lexer.OPEN_CURLY, parse_obj_assignment_expr)
 	nud(lexer.NULL, parse_null_expr)
-	nud(lexer.THIS, parse_this_expr)
 
 	stmt(lexer.CONTRACT, parse_contract_decl)
 	stmt(lexer.LET, parse_var_decl)
@@ -91,7 +90,7 @@ func createTokenLookups() {
 	stmt(lexer.IF, parse_if_stmt)
 	stmt(lexer.WHILE, parse_while_loop_stmt)
 	stmt(lexer.FOR, parse_for_loop_stmt)
-	stmt(lexer.FUNC, parse_func_stmt)
+	stmt(lexer.FN, parse_func_stmt)
 	stmt(lexer.RETURN, parse_return_stmt)
-	stmt(lexer.CONSTRUCTOR, parse_constructor_stmt)
+	stmt(lexer.REQUIRE, parse_require_stmt)
 }

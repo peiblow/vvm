@@ -150,7 +150,7 @@ func parse_for_loop_stmt(p *parser) ast.Stmt {
 func parse_func_stmt(p *parser) ast.Stmt {
 	var returnType ast.Type
 
-	p.expect(lexer.FUNC)
+	p.expect(lexer.FN)
 	name := ast.ExpressionStmt{Expression: ast.SymbolExpr{Value: p.advance().Literal}}
 
 	args := parse_arguments(p)
@@ -182,14 +182,4 @@ func parse_return_stmt(p *parser) ast.Stmt {
 	}
 }
 
-func parse_constructor_stmt(p *parser) ast.Stmt {
-	p.expect(lexer.CONSTRUCTOR)
 
-	args := parse_arguments(p)
-	body := parse_block(p)
-
-	return ast.ConstructorStmt{
-		Arguments: args,
-		Body:      body,
-	}
-}

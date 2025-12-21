@@ -14,6 +14,14 @@ const (
 	IDENTIFIER
 	CONTRACT
 
+	REGISTRY
+	AGENT
+	POLICY
+	TYPE
+	ACTION
+	EMIT
+	REQUIRE
+
 	// Grouping & Braces
 	OPEN_BRACKET
 	CLOSE_BRACKET
@@ -64,7 +72,7 @@ const (
 	// Reserved Keywords
 	LET
 	CONST
-	FUNC
+	FN
 	IF
 	ELSE
 	FOREACH
@@ -72,14 +80,13 @@ const (
 	FOR
 	RETURN
 	THIS
-	CONSTRUCTOR
 
 	// Misc
 	NUM_TOKENS
 )
 
 var reserved_lu map[string]TokenType = map[string]TokenType{
-	"func":        FUNC,
+	"fn":        	 FN,
 	"if":          IF,
 	"else":        ELSE,
 	"foreach":     FOREACH,
@@ -89,7 +96,12 @@ var reserved_lu map[string]TokenType = map[string]TokenType{
 	"let":         LET,
 	"contract":    CONTRACT,
 	"return":      RETURN,
-	"constructor": CONSTRUCTOR,
+	"registry":    REGISTRY,
+	"agent":       AGENT,
+	"policy":      POLICY,
+	"type":      	 TYPE,
+	"action":      ACTION,
+	"emit":        EMIT,
 	"this":        THIS,
 }
 
@@ -191,8 +203,8 @@ func TokenTypeString(tp TokenType) string {
 		return "star"
 	case PERCENT:
 		return "percent"
-	case FUNC:
-		return "func"
+	case FN:
+		return "fn"
 	case IF:
 		return "if"
 	case ELSE:
