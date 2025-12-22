@@ -10,17 +10,18 @@ import (
 )
 
 func main() {
-	content, _ := os.ReadFile("01.snx")
+	content, _ := os.ReadFile("00.snx")
 	tokens := lexer.Tokenize(string(content))
 
 	ast := parser.Parse(tokens)
+	// litter.Dump(ast)
 
 	// Compila o código
 	cmpl := compiler.New()
 	cmpl.CompileBlock(ast)
 
 	// Debug (descomente para ver informações de debug)
-	cmpl.Debug()
+	// cmpl.Debug()
 
 	// Executa o programa
 	virtualMachine := vm.New(cmpl)

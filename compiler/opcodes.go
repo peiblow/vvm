@@ -53,21 +53,13 @@ const (
 	OP_MSTORE = 0x1C // armazena valor na memória
 	OP_MLOAD  = 0x1D // carrega valor da memória
 
-	// Machine Learning
-	OP_ML_RUN     = 0x40 // executa modelo de ML
-	OP_ML_FEED    = 0x41 // envia dados para treinamento
-	OP_ML_AGG     = 0x42 // agrega gradientes
-	OP_ML_PREDICT = 0x43 // faz predição
-	OP_ML_SCORE   = 0x44 // calcula métricas ou loss
-	OP_ML_SAVE    = 0x45 // salva modelo
-	OP_ML_LOAD    = 0x46 // carrega modelo
-
 	// Blockchain/Smart Contract
 	OP_REWARD     = 0x50 // distribui recompensa
 	OP_EMIT       = 0x51 // emite evento
 	OP_TRANSFER   = 0x52 // transfere valor entre contas
 	OP_BALANCE_OF = 0x53 // verifica saldo de endereço
 	OP_REQUIRE    = 0x54 // verifica condição (reverte se falso)
+	OP_ERR        = 0x55 // lança erro/exceção
 
 	// Objetos
 	OP_PUSH_OBJECT  = 0x60 // cria objeto vazio na pilha
@@ -108,18 +100,12 @@ var OpcodeNames = map[byte]string{
 	OP_DELETE:       "DELETE",
 	OP_MSTORE:       "MSTORE",
 	OP_MLOAD:        "MLOAD",
-	OP_ML_RUN:       "ML_RUN",
-	OP_ML_FEED:      "ML_FEED",
-	OP_ML_AGG:       "ML_AGG",
-	OP_ML_PREDICT:   "ML_PREDICT",
-	OP_ML_SCORE:     "ML_SCORE",
-	OP_ML_SAVE:      "ML_SAVE",
-	OP_ML_LOAD:      "ML_LOAD",
 	OP_REWARD:       "REWARD",
 	OP_EMIT:         "EMIT",
 	OP_TRANSFER:     "TRANSFER",
 	OP_BALANCE_OF:   "BALANCE_OF",
 	OP_REQUIRE:      "REQUIRE",
+	OP_ERR:          "ERR",
 	OP_PUSH_OBJECT:  "PUSH_OBJECT",
 	OP_SET_PROPERTY: "SET_PROPERTY",
 	OP_GET_PROPERTY: "GET_PROPERTY",

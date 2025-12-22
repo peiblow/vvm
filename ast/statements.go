@@ -74,3 +74,10 @@ type ReturnStmt struct {
 }
 
 func (n ReturnStmt) stmt() {}
+
+type RequireStmt struct {
+	Condition Expr
+	Message   Expr
+}
+
+func (n RequireStmt) stmt() {}

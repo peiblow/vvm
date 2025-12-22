@@ -95,6 +95,10 @@ func (vm *VM) Run() {
 			vm.execMstore(code)
 		case compiler.OP_MLOAD:
 			vm.execMload(code)
+		case compiler.OP_REQUIRE:
+			vm.execRequire()
+		case compiler.OP_ERR:
+			vm.execErr()
 		case compiler.OP_DELETE:
 			vm.execDelete(code)
 		case compiler.OP_PUSH_OBJECT:
@@ -103,8 +107,6 @@ func (vm *VM) Run() {
 			fmt.Println("Transfer has been made :D")
 		case compiler.OP_BALANCE_OF:
 			fmt.Println("BalanceOf has been made :D")
-		case compiler.OP_REQUIRE:
-			fmt.Println("Require has been made :D")
 		case compiler.OP_HALT:
 			fmt.Println("End of program.")
 			return
@@ -430,4 +432,17 @@ func (vm *VM) execDelete(code []byte) {
 	vm.ip++
 	key := int(code[vm.ip])
 	delete(vm.storage, key)
+}
+
+func (vm *VM) execRequire() {
+	condition := vm.pop("OP_REQUIRE")
+	condInt, ok := condition.(int)
+	if !ok || condInt == 0 {
+		panic("Require condition failed")
+	}
+}
+
+func (vm *VM) execErr() {
+	message := vm.pop("OP_ERR")
+	panic(fmt.Sprintf("Error raised: %v", message))
 }

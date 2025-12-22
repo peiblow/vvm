@@ -182,4 +182,18 @@ func parse_return_stmt(p *parser) ast.Stmt {
 	}
 }
 
+func parse_require_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.REQUIRE)
+	p.expect(lexer.OPEN_PAREN)
 
+	condition := parse_expr(p, defalt_bp)
+	p.expect(lexer.SEMI_COLON)
+
+	message := parse_expr(p, defalt_bp)
+
+	p.expect(lexer.CLOSE_PAREN)
+	return ast.RequireStmt{
+		Condition: condition,
+		Message:   message,
+	}
+}

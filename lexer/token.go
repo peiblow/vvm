@@ -103,6 +103,7 @@ var reserved_lu map[string]TokenType = map[string]TokenType{
 	"action":      ACTION,
 	"emit":        EMIT,
 	"this":        THIS,
+	"require":     REQUIRE,
 }
 
 type Token struct {
