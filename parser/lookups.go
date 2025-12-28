@@ -93,4 +93,6 @@ func createTokenLookups() {
 	stmt(lexer.FN, parse_func_stmt)
 	stmt(lexer.RETURN, parse_return_stmt)
 	stmt(lexer.REQUIRE, parse_require_stmt)
+	stmt(lexer.REGISTRY, parse_registry_declare_stmt)
+	stmt(lexer.AGENT, parse_agent_stmt)
 }

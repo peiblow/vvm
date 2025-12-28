@@ -44,14 +44,14 @@ const (
 	// Valores especiais
 	OP_NULL = 0x18 // valor nulo
 
-	// Storage (persistente)
+	// Storage (runtime)
 	OP_STORE  = 0x1A // armazena valor na storage
 	OP_SLOAD  = 0x1B // carrega valor da storage
 	OP_DELETE = 0x1E // remove valor da storage
 
-	// Memory (temporária)
-	OP_MSTORE = 0x1C // armazena valor na memória
-	OP_MLOAD  = 0x1D // carrega valor da memória
+	// Registry (persistente)
+	OP_REGISTRY_DECLARE = 0x1C // armazena valor na memória
+	OP_REGISTRY_GET     = 0x1D // carrega valor da memória
 
 	// Blockchain/Smart Contract
 	OP_REWARD     = 0x50 // distribui recompensa
@@ -69,52 +69,52 @@ const (
 
 // OpcodeNames mapeia opcodes para seus nomes (útil para debug)
 var OpcodeNames = map[byte]string{
-	OP_HALT:         "HALT",
-	OP_CONST:        "CONST",
-	OP_PUSH:         "PUSH",
-	OP_POP:          "POP",
-	OP_DUP:          "DUP",
-	OP_SWAP:         "SWAP",
-	OP_ADD:          "ADD",
-	OP_SUB:          "SUB",
-	OP_MUL:          "MUL",
-	OP_DIV:          "DIV",
-	OP_GT:           "GT",
-	OP_GT_EQ:        "GT_EQ",
-	OP_LT:           "LT",
-	OP_LT_EQ:        "LT_EQ",
-	OP_EQ:           "EQ",
-	OP_DIFF:         "DIFF",
-	OP_PLUS_EQ:      "PLUS_EQ",
-	OP_PRINT:        "PRINT",
-	OP_NOP:          "NOP",
-	OP_JMP:          "JMP",
-	OP_JMP_IF:       "JMP_IF",
-	OP_CALL:         "CALL",
-	OP_RET:          "RET",
-	OP_ACCESS:       "ACCESS",
-	OP_LENGTH:       "LENGTH",
-	OP_NULL:         "NULL",
-	OP_STORE:        "STORE",
-	OP_SLOAD:        "SLOAD",
-	OP_DELETE:       "DELETE",
-	OP_MSTORE:       "MSTORE",
-	OP_MLOAD:        "MLOAD",
-	OP_REWARD:       "REWARD",
-	OP_EMIT:         "EMIT",
-	OP_TRANSFER:     "TRANSFER",
-	OP_BALANCE_OF:   "BALANCE_OF",
-	OP_REQUIRE:      "REQUIRE",
-	OP_ERR:          "ERR",
-	OP_PUSH_OBJECT:  "PUSH_OBJECT",
-	OP_SET_PROPERTY: "SET_PROPERTY",
-	OP_GET_PROPERTY: "GET_PROPERTY",
+	OP_HALT:             "HALT",
+	OP_CONST:            "CONST",
+	OP_PUSH:             "PUSH",
+	OP_POP:              "POP",
+	OP_DUP:              "DUP",
+	OP_SWAP:             "SWAP",
+	OP_ADD:              "ADD",
+	OP_SUB:              "SUB",
+	OP_MUL:              "MUL",
+	OP_DIV:              "DIV",
+	OP_GT:               "GT",
+	OP_GT_EQ:            "GT_EQ",
+	OP_LT:               "LT",
+	OP_LT_EQ:            "LT_EQ",
+	OP_EQ:               "EQ",
+	OP_DIFF:             "DIFF",
+	OP_PLUS_EQ:          "PLUS_EQ",
+	OP_PRINT:            "PRINT",
+	OP_NOP:              "NOP",
+	OP_JMP:              "JMP",
+	OP_JMP_IF:           "JMP_IF",
+	OP_CALL:             "CALL",
+	OP_RET:              "RET",
+	OP_ACCESS:           "ACCESS",
+	OP_LENGTH:           "LENGTH",
+	OP_NULL:             "NULL",
+	OP_STORE:            "STORE",
+	OP_SLOAD:            "SLOAD",
+	OP_DELETE:           "DELETE",
+	OP_REWARD:           "REWARD",
+	OP_EMIT:             "EMIT",
+	OP_TRANSFER:         "TRANSFER",
+	OP_BALANCE_OF:       "BALANCE_OF",
+	OP_REQUIRE:          "REQUIRE",
+	OP_REGISTRY_DECLARE: "REGISTRY_DECLARE",
+	OP_REGISTRY_GET:     "REGISTRY_GET",
+	OP_ERR:              "ERR",
+	OP_PUSH_OBJECT:      "PUSH_OBJECT",
+	OP_SET_PROPERTY:     "SET_PROPERTY",
+	OP_GET_PROPERTY:     "GET_PROPERTY",
 }
 
 // HasOperand retorna true se o opcode requer um operando
 func HasOperand(op byte) bool {
 	switch op {
-	case OP_PUSH, OP_CONST, OP_STORE, OP_SLOAD, OP_MSTORE, OP_MLOAD,
+	case OP_PUSH, OP_CONST, OP_STORE, OP_SLOAD,
 		OP_CALL, OP_JMP, OP_JMP_IF:
 		return true
 	}

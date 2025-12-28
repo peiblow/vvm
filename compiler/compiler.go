@@ -41,6 +41,16 @@ func (c *Compiler) addConst(val interface{}) byte {
 	return byte(idx)
 }
 
+// procuta na constPool e retorna o índice se encontrado, ou -1 se não encontrado
+func (c *Compiler) findConst(val interface{}) byte {
+	for i, v := range c.ConstPool {
+		if v == val {
+			return byte(i)
+		}
+	}
+	return byte(255)
+}
+
 // allocSlot aloca um slot para uma variável
 func (c *Compiler) allocSlot(name string) int {
 	slot := c.NextSlot

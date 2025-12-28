@@ -86,24 +86,24 @@ const (
 )
 
 var reserved_lu map[string]TokenType = map[string]TokenType{
-	"fn":        	 FN,
-	"if":          IF,
-	"else":        ELSE,
-	"foreach":     FOREACH,
-	"while":       WHILE,
-	"for":         FOR,
-	"const":       CONST,
-	"let":         LET,
-	"contract":    CONTRACT,
-	"return":      RETURN,
-	"registry":    REGISTRY,
-	"agent":       AGENT,
-	"policy":      POLICY,
-	"type":      	 TYPE,
-	"action":      ACTION,
-	"emit":        EMIT,
-	"this":        THIS,
-	"require":     REQUIRE,
+	"fn":       FN,
+	"if":       IF,
+	"else":     ELSE,
+	"foreach":  FOREACH,
+	"while":    WHILE,
+	"for":      FOR,
+	"const":    CONST,
+	"let":      LET,
+	"contract": CONTRACT,
+	"return":   RETURN,
+	"registry": REGISTRY,
+	"agent":    AGENT,
+	"policy":   POLICY,
+	"type":     TYPE,
+	"action":   ACTION,
+	"emit":     EMIT,
+	"this":     THIS,
+	"require":  REQUIRE,
 }
 
 type Token struct {
@@ -216,6 +216,8 @@ func TokenTypeString(tp TokenType) string {
 		return "for"
 	case WHILE:
 		return "while"
+	case REGISTRY:
+		return "registry"
 	default:
 		return fmt.Sprintf("unknown(%d)", tp)
 	}

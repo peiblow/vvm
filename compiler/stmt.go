@@ -26,6 +26,10 @@ func (c *Compiler) compileStmt(stmt ast.Stmt) {
 		c.compileWhile(s)
 	case ast.RequireStmt:
 		c.compileRequire(s)
+	case ast.RegistryDeclareStmt:
+		c.compileRegistryDeclare(s)
+	case ast.AgentStmt:
+		c.compileAgentStmt(s)
 
 	default:
 		fmt.Printf("Statement não reconhecido: %T\n", s)
@@ -215,4 +219,35 @@ func (c *Compiler) compileRequire(s ast.RequireStmt) {
 
 	c.patchJump(jmpToEndPos+1, errorBlockPos)
 	c.patchJump(jmpPastErrorPos+1, endPos)
+}
+
+func (c *Compiler) compileRegistryDeclare(s ast.RegistryDeclareStmt) {
+	kindIdx := c.addConst(s.Kind)
+	c.emit(OP_CONST, kindIdx)
+	nameIdx := c.addConst(s.Name)
+	c.emit(OP_CONST, nameIdx)
+	versionIdx := c.addConst(s.Version)
+	c.emit(OP_CONST, versionIdx)
+	ownerIdx := c.addConst(s.Owner)
+	c.emit(OP_CONST, ownerIdx)
+	purposeIdx := c.addConst(s.Purpose)
+	c.emit(OP_CONST, purposeIdx)
+
+	c.emit(
+		OP_REGISTRY_DECLARE,
+		byte(kindIdx),
+		byte(nameIdx),
+		byte(versionIdx),
+		byte(ownerIdx),
+		byte(purposeIdx),
+	)
+}
+
+func (c *Compiler) compileAgentStmt(s ast.AgentStmt) {
+	c.allocSlot(s.Identifier.(ast.SymbolExpr).Value)
+	identifierIdx := c.findConst(s.Identifier)
+	c.emit(OP_CONST, identifierIdx)
+
+	c.emit(OP_REGISTRY_GET, byte(identifierIdx))
+	c.emit(OP_STORE, 0)
 }

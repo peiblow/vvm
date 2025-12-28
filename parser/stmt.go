@@ -197,3 +197,61 @@ func parse_require_stmt(p *parser) ast.Stmt {
 		Message:   message,
 	}
 }
+
+func parse_registry_declare_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.REGISTRY)
+
+	kind := parse_expr(p, defalt_bp)
+
+	name := parse_expr(p, defalt_bp)
+
+	p.expect(lexer.OPEN_CURLY)
+
+	parse_expr(p, defalt_bp)
+	p.expect(lexer.COLON)
+	version := parse_expr(p, defalt_bp)
+
+	parse_expr(p, defalt_bp)
+	p.expect(lexer.COLON)
+	owner := parse_expr(p, defalt_bp)
+
+	parse_expr(p, defalt_bp)
+	p.expect(lexer.COLON)
+	purpose := parse_expr(p, defalt_bp)
+
+	p.expect(lexer.CLOSE_CURLY)
+	return ast.RegistryDeclareStmt{
+		Kind:    kind,
+		Name:    name,
+		Version: version,
+		Owner:   owner,
+		Purpose: purpose,
+	}
+}
+
+func parse_agent_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.AGENT)
+	agentName := parse_expr(p, defalt_bp)
+	p.expect(lexer.OPEN_CURLY)
+
+	parse_expr(p, defalt_bp)
+	p.expect(lexer.COLON)
+	hash := parse_expr(p, defalt_bp)
+
+	parse_expr(p, defalt_bp)
+	p.expect(lexer.COLON)
+	version := parse_expr(p, defalt_bp)
+
+	parse_expr(p, defalt_bp)
+	p.expect(lexer.COLON)
+	owner := parse_expr(p, defalt_bp)
+
+	p.expect(lexer.CLOSE_CURLY)
+
+	return ast.AgentStmt{
+		Identifier: agentName,
+		Hash:       hash,
+		Version:    version,
+		Owner:      owner,
+	}
+}

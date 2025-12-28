@@ -186,7 +186,6 @@ func (c *Compiler) compileCall(e ast.CallExpr) {
 	}
 }
 
-// compileBuiltinOrUserCall compila chamada builtin ou de usuário
 func (c *Compiler) compileBuiltinOrUserCall(name string) {
 	switch name {
 	case "print":
@@ -245,14 +244,12 @@ func (c *Compiler) compileArrayAccess(e ast.ArrayAccessItemExpr) {
 
 // compileMember compila acesso a membro de objeto
 func (c *Compiler) compileMember(e ast.MemberExpr) {
-	// Carrega objeto
 	if _, ok := e.Object.(ast.ThisExpr); ok {
 		c.emit(OP_SLOAD, 0)
 	} else {
 		c.compileExpr(e.Object)
 	}
 
-	// Carrega propriedade
 	if prop, ok := e.Property.(ast.SymbolExpr); ok {
 		idx := c.addConst(prop.Value)
 		c.emit(OP_CONST, idx)

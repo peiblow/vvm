@@ -81,3 +81,22 @@ type RequireStmt struct {
 }
 
 func (n RequireStmt) stmt() {}
+
+type RegistryDeclareStmt struct {
+	Kind    Expr
+	Name    Expr
+	Version Expr
+	Owner   Expr
+	Purpose Expr
+}
+
+func (n RegistryDeclareStmt) stmt() {}
+
+type AgentStmt struct {
+	Identifier Expr
+	Hash       Expr
+	Version    Expr
+	Owner      Expr
+}
+
+func (n AgentStmt) stmt() {}

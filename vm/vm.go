@@ -91,10 +91,10 @@ func (vm *VM) Run() {
 			vm.execStore(code)
 		case compiler.OP_SLOAD:
 			vm.execSload(code)
-		case compiler.OP_MSTORE:
-			vm.execMstore(code)
-		case compiler.OP_MLOAD:
-			vm.execMload(code)
+		case compiler.OP_REGISTRY_DECLARE:
+			vm.execRegistry(code)
+		case compiler.OP_REGISTRY_GET:
+			vm.execRegistryGet(code)
 		case compiler.OP_REQUIRE:
 			vm.execRequire()
 		case compiler.OP_ERR:
@@ -272,6 +272,7 @@ func (vm *VM) execPrint() {
 		fmt.Println("Warning: OP_PRINT with empty stack, ignoring")
 		return
 	}
+
 	val := vm.pop("OP_PRINT")
 	fmt.Println(val)
 }
@@ -412,19 +413,42 @@ func (vm *VM) execSload(code []byte) {
 	vm.push(val)
 }
 
-func (vm *VM) execMstore(code []byte) {
+func (vm *VM) execRegistry(code []byte) {
+	purpose := vm.pop("OP_REGISTRY_DECLARE")
 	vm.ip++
-	key := int(code[vm.ip])
-	val := vm.pop("OP_MSTORE")
-	vm.memory[key] = val
+
+	owner := vm.pop("OP_REGISTRY_DECLARE")
+	vm.ip++
+
+	version := vm.pop("OP_REGISTRY_DECLARE")
+	vm.ip++
+
+	name := vm.pop("OP_REGISTRY_DECLARE")
+	vm.ip++
+
+	kind := vm.pop("OP_REGISTRY_DECLARE")
+	vm.ip++
+
+	key := len(vm.storage) + 1
+	vm.storage[key] = map[string]interface{}{
+		"kind":    kind,
+		"name":    name,
+		"version": version,
+		"owner":   owner,
+		"purpose": purpose,
+	}
 }
 
-func (vm *VM) execMload(code []byte) {
-	key := int(code[vm.ip])
-	val, ok := vm.memory[key]
+func (vm *VM) execRegistryGet(code []byte) {
+	identifierIdx := int(code[vm.ip])
+	vm.ip++
+
+	val, ok := vm.storage[identifierIdx]
 	if !ok {
-		val = 0
+		panic(fmt.Sprintf("Registry with identifier %d not found", identifierIdx))
 	}
+
+	// fmt.Println("Registry Get:", val)
 	vm.push(val)
 }
 
