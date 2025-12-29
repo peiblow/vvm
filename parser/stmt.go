@@ -255,3 +255,25 @@ func parse_agent_stmt(p *parser) ast.Stmt {
 		Owner:      owner,
 	}
 }
+
+func parse_policy_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.POLICY)
+	policyName := parse_expr(p, defalt_bp)
+
+	p.expect(lexer.OPEN_CURLY)
+
+	rules := make(map[string]ast.Expr)
+	for p.currentTokenType() != lexer.CLOSE_CURLY {
+		ruleKey := p.expectError(lexer.IDENTIFIER, "Expected rule identifier in policy declaration").Literal
+		p.expect(lexer.COLON)
+		ruleValue := parse_expr(p, defalt_bp)
+		rules[ruleKey] = ruleValue
+	}
+
+	p.expect(lexer.CLOSE_CURLY)
+
+	return ast.PolicyStmt{
+		Identifier: policyName,
+		Rules:      rules,
+	}
+}

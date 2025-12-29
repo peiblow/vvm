@@ -95,6 +95,8 @@ func (vm *VM) Run() {
 			vm.execRegistry(code)
 		case compiler.OP_REGISTRY_GET:
 			vm.execRegistryGet(code)
+		case compiler.OP_POLICY_DECLARE:
+			vm.execPolicyDeclare(code)
 		case compiler.OP_REQUIRE:
 			vm.execRequire()
 		case compiler.OP_ERR:
@@ -450,6 +452,18 @@ func (vm *VM) execRegistryGet(code []byte) {
 
 	// fmt.Println("Registry Get:", val)
 	vm.push(val)
+}
+
+func (vm *VM) execPolicyDeclare(code []byte) {
+	// For simplicity, we just pop the identifier and store an empty policy
+	identifierIdx := int(code[vm.ip])
+	vm.ip++
+
+	key := len(vm.storage) + 1
+	vm.storage[key] = map[string]interface{}{
+		"identifier": identifierIdx,
+		"rules":      map[string]interface{}{},
+	}
 }
 
 func (vm *VM) execDelete(code []byte) {

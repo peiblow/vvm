@@ -53,6 +53,8 @@ const (
 	OP_REGISTRY_DECLARE = 0x1C // armazena valor na memória
 	OP_REGISTRY_GET     = 0x1D // carrega valor da memória
 
+	OP_POLICY_DECLARE = 0x4F // declara política
+
 	// Blockchain/Smart Contract
 	OP_REWARD     = 0x50 // distribui recompensa
 	OP_EMIT       = 0x51 // emite evento

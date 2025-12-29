@@ -30,9 +30,11 @@ func (c *Compiler) compileStmt(stmt ast.Stmt) {
 		c.compileRegistryDeclare(s)
 	case ast.AgentStmt:
 		c.compileAgentStmt(s)
+	case ast.PolicyStmt:
+		c.compilePolicyStmt(s)
 
 	default:
-		fmt.Printf("Statement não reconhecido: %T\n", s)
+		fmt.Printf("Unrecognized statement type: %T\n", s)
 	}
 }
 
@@ -96,7 +98,7 @@ func (c *Compiler) extractFuncName(name ast.Expr) string {
 			return sym.Value
 		}
 	}
-	panic("Tipo de expressão não suportado para nome de função")
+	panic("Unsupported function name expression type")
 }
 
 func (c *Compiler) compileFuncArgs(args ast.Stmt) []int {
@@ -250,4 +252,36 @@ func (c *Compiler) compileAgentStmt(s ast.AgentStmt) {
 
 	c.emit(OP_REGISTRY_GET, byte(identifierIdx))
 	c.emit(OP_STORE, 0)
+}
+
+func (c *Compiler) compilePolicyStmt(s ast.PolicyStmt) {
+	c.allocSlot(s.Identifier.(ast.SymbolExpr).Value)
+
+	identifierIdx := c.findConst(s.Identifier)
+	if identifierIdx == 255 {
+		identifierIdx = c.addConst(s.Identifier)
+	}
+	c.emit(OP_CONST, identifierIdx)
+
+	c.emit(OP_PUSH_OBJECT)
+	for key, value := range s.Rules {
+		keyIdx := c.addConst(key)
+		c.emit(OP_CONST, keyIdx)
+
+		switch v := value.(type) {
+		case ast.NumberExpr:
+			valIdx := c.addConst(v.Value)
+			c.emit(OP_CONST, valIdx)
+		case ast.StringExpr:
+			valIdx := c.addConst(v.Value)
+			c.emit(OP_CONST, valIdx)
+		default:
+			panic(fmt.Sprintf("Unsupported policy rule value type: %T", v))
+		}
+
+		c.emit(OP_SET_PROPERTY)
+	}
+
+	c.emit(OP_POLICY_DECLARE, byte(identifierIdx))
+	c.emit(OP_STORE, byte(c.Symbols[s.Identifier.(ast.SymbolExpr).Value]))
 }

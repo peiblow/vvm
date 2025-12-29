@@ -100,3 +100,10 @@ type AgentStmt struct {
 }
 
 func (n AgentStmt) stmt() {}
+
+type PolicyStmt struct {
+	Identifier Expr
+	Rules      map[string]Expr
+}
+
+func (n PolicyStmt) stmt() {}

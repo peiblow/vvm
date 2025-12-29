@@ -72,7 +72,7 @@ func (c *Compiler) convertArrayItems(items []ast.Expr) []interface{} {
 		case ast.ArrayLiteralExpr:
 			result[i] = c.convertArrayItems(it.Items)
 		default:
-			panic("Tipo de item de array não suportado")
+			panic("Array item type not supported")
 		}
 	}
 	return result
@@ -92,7 +92,7 @@ func (c *Compiler) compileAssignment(e ast.AssignmentExpr) {
 	case ast.MemberExpr:
 		c.compileMemberAssignment(left, e.Right)
 	default:
-		panic("Tipo de expressão não suportado para lado esquerdo de atribuição")
+		panic("Expression type not supported for left assignment")
 	}
 }
 
