@@ -38,7 +38,12 @@ func (c *Compiler) compileExpr(expr ast.Expr) {
 
 // compileNumber compila um número literal
 func (c *Compiler) compileNumber(e ast.NumberExpr) {
-	c.emit(OP_PUSH, byte(e.Value))
+	if e.Value <= 256 {
+		c.emit(OP_PUSH, byte(e.Value))
+	} else {
+		idx := c.addConst(e.Value)
+		c.emit(OP_CONST, idx)
+	}
 }
 
 // compileString compila uma string literal

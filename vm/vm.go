@@ -213,8 +213,9 @@ func (vm *VM) execGt() {
 }
 
 func (vm *VM) execGtEq() {
-	b := vm.pop("OP_GT_EQ").(int)
-	a := vm.pop("OP_GT_EQ").(int)
+	b := asNumber(vm.pop("OP_GT_EQ"))
+	a := asNumber(vm.pop("OP_GT_EQ"))
+
 	if a >= b {
 		vm.push(1)
 	} else {
@@ -239,6 +240,19 @@ func (vm *VM) execLtEq() {
 		vm.push(1)
 	} else {
 		vm.push(0)
+	}
+}
+
+func asNumber(v interface{}) float64 {
+	switch n := v.(type) {
+	case int:
+		return float64(n)
+	case int64:
+		return float64(n)
+	case float64:
+		return n
+	default:
+		panic("expected numeric value")
 	}
 }
 
