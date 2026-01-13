@@ -96,4 +96,5 @@ func createTokenLookups() {
 	stmt(lexer.REGISTRY, parse_registry_declare_stmt)
 	stmt(lexer.AGENT, parse_agent_stmt)
 	stmt(lexer.POLICY, parse_policy_stmt)
+	stmt(lexer.TYPE, parse_type_stmt)
 }

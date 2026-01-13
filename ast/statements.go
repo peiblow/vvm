@@ -107,3 +107,10 @@ type PolicyStmt struct {
 }
 
 func (n PolicyStmt) stmt() {}
+
+type TypeDeclareStmt struct {
+	Name   Expr
+	Fields map[string]Expr
+}
+
+func (n TypeDeclareStmt) stmt() {}

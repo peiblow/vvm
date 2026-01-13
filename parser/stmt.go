@@ -277,3 +277,25 @@ func parse_policy_stmt(p *parser) ast.Stmt {
 		Rules:      rules,
 	}
 }
+
+func parse_type_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.TYPE)
+	typeName := parse_expr(p, defalt_bp)
+
+	p.expect(lexer.OPEN_CURLY)
+
+	fields := make(map[string]ast.Expr)
+	for p.currentTokenType() != lexer.CLOSE_CURLY {
+		fieldKey := p.expectError(lexer.IDENTIFIER, "Expected rule identifier in policy declaration").Literal
+		p.expect(lexer.COLON)
+		fieldType := parse_expr(p, defalt_bp)
+		fields[fieldKey] = fieldType
+	}
+
+	p.expect(lexer.CLOSE_CURLY)
+
+	return ast.TypeDeclareStmt{
+		Name:   typeName,
+		Fields: fields,
+	}
+}

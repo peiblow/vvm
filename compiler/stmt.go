@@ -32,6 +32,8 @@ func (c *Compiler) compileStmt(stmt ast.Stmt) {
 		c.compileAgentStmt(s)
 	case ast.PolicyStmt:
 		c.compilePolicyStmt(s)
+	case ast.TypeDeclareStmt:
+		c.compileTypeDeclareStmt(s)
 
 	default:
 		fmt.Printf("Unrecognized statement type: %T\n", s)
@@ -284,4 +286,36 @@ func (c *Compiler) compilePolicyStmt(s ast.PolicyStmt) {
 
 	c.emit(OP_POLICY_DECLARE, byte(identifierIdx))
 	c.emit(OP_STORE, byte(c.Symbols[s.Identifier.(ast.SymbolExpr).Value]))
+}
+
+func (c *Compiler) compileTypeDeclareStmt(s ast.TypeDeclareStmt) {
+	c.allocSlot(s.Name.(ast.SymbolExpr).Value)
+
+	identifierIdx := c.findConst(s.Name)
+	c.emit(OP_CONST, identifierIdx)
+
+	c.emit(OP_PUSH_OBJECT)
+	for key, value := range s.Fields {
+		keyIdx := c.addConst(key)
+		c.emit(OP_CONST, keyIdx)
+
+		switch v := value.(type) {
+		case ast.NumberExpr:
+			valIdx := c.addConst(v.Value)
+			c.emit(OP_CONST, valIdx)
+		case ast.StringExpr:
+			valIdx := c.addConst(v.Value)
+			c.emit(OP_CONST, valIdx)
+		case ast.SymbolExpr:
+			valIdx := c.addConst(v.Value)
+			c.emit(OP_CONST, valIdx)
+		default:
+			panic(fmt.Sprintf("Unsupported type value: %T", v))
+		}
+
+		c.emit(OP_SET_PROPERTY)
+	}
+
+	c.emit(OP_TYPE_DECLARE, byte(identifierIdx))
+	c.emit(OP_STORE, byte(c.Symbols[s.Name.(ast.SymbolExpr).Value]))
 }
