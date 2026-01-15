@@ -1,6 +1,8 @@
 # Synx Lang
 
-A smart contract-inspired programming language built from scratch in **Go**, with compilation to **bytecode** and execution on a **stack-based virtual machine**.
+Synx governs decisions — it does not replace programming languages.
+
+Synx is a declarative governance and execution language designed to validate, govern, and auditablely record external decisions in a deterministic and controlled manner before irreversible actions occur.
 
 This project explores language design, compilers, and virtual machines with a focus on blockchain/smart contract primitives.
 
