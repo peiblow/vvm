@@ -54,9 +54,14 @@ func (n ForStmt) stmt() {}
 
 type FuncStmt struct {
 	Name       Expr
-	Arguments  Stmt
+	Arguments  []ArgsStmt
 	Body       Stmt
 	ReturnType Type
+}
+
+type ArgsStmt struct {
+	ArgName Expr
+	ArgType Expr
 }
 
 func (n FuncStmt) stmt() {}
@@ -114,3 +119,10 @@ type TypeDeclareStmt struct {
 }
 
 func (n TypeDeclareStmt) stmt() {}
+
+type EmitStmt struct {
+	EventName Expr
+	Arguments Expr
+}
+
+func (n EmitStmt) stmt() {}

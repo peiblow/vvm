@@ -39,6 +39,22 @@ func parse_primary_expr(p *parser) ast.Expr {
 		return ast.NumberExpr{
 			Value: number,
 		}
+	case lexer.HEX_NUMBER:
+		hexStr := p.advance().Literal
+		// For short hex values (addresses), parse as number
+		// For long hex values (hashes), keep as string
+		if len(hexStr) <= 18 { // 0x + 16 hex digits fits in int64
+			number, err := strconv.ParseInt(hexStr[2:], 16, 64)
+			if err == nil {
+				return ast.NumberExpr{
+					Value: float64(number),
+				}
+			}
+		}
+		// Long hex value - keep as string
+		return ast.StringExpr{
+			Value: hexStr,
+		}
 	case lexer.STRING:
 		return ast.StringExpr{
 			Value: p.advance().Literal,
@@ -148,7 +164,11 @@ func parse_obj_item_assignment_expr(p *parser) ast.ObjectPropertyExpr {
 	p.expect(lexer.COLON)
 
 	value := parse_expr(p, defalt_bp)
-	p.expect(lexer.COMMA)
+
+	// Comma is optional (handles last item without trailing comma)
+	if p.currentTokenType() == lexer.COMMA {
+		p.advance()
+	}
 
 	return ast.ObjectPropertyExpr{
 		Key:   key,
@@ -163,10 +183,6 @@ func parse_obj_assignment_expr(p *parser) ast.Expr {
 	for p.currentTokenType() != lexer.CLOSE_CURLY {
 		prop := parse_obj_item_assignment_expr(p)
 		fields = append(fields, prop)
-
-		if p.currentToken().Type == lexer.COMMA {
-			p.advance()
-		}
 	}
 
 	p.expect(lexer.CLOSE_CURLY)

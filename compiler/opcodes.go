@@ -52,6 +52,7 @@ const (
 	// Registry (persistente)
 	OP_REGISTRY_DECLARE = 0x1C // armazena valor na memória
 	OP_REGISTRY_GET     = 0x1D // carrega valor da memória
+	OP_AGENT_VALIDATE   = 0x1F // validates agent against registry
 
 	OP_POLICY_DECLARE = 0x4F // declara política
 	OP_TYPE_DECLARE   = 0x5F // declara tipo

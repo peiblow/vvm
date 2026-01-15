@@ -34,6 +34,8 @@ func (c *Compiler) compileStmt(stmt ast.Stmt) {
 		c.compilePolicyStmt(s)
 	case ast.TypeDeclareStmt:
 		c.compileTypeDeclareStmt(s)
+	case ast.EmitStmt:
+		c.compileEmitStmt(s)
 
 	default:
 		fmt.Printf("Unrecognized statement type: %T\n", s)
@@ -71,14 +73,17 @@ func (c *Compiler) compileFunc(s ast.FuncStmt) {
 	c.isInFunction = true
 
 	skipFuncPos := c.currentPos()
-	c.emit(OP_JMP, 0)
+	c.emit(OP_JMP, 0, 0) // 2-byte address placeholder
 
 	funcMeta := FunctionMeta{
-		Addr: c.currentPos(),
-		Args: []int{},
+		Addr:    c.currentPos(),
+		Args:    []int{},
+		ArgMeta: []ArgMeta{},
 	}
 
-	funcMeta.Args = c.compileFuncArgs(s.Arguments)
+	slots, argMeta := c.compileFuncArgs(s.Arguments)
+	funcMeta.Args = slots
+	funcMeta.ArgMeta = argMeta
 
 	c.Functions[funcName] = funcMeta
 	c.FunctionName[c.currentPos()] = funcName
@@ -103,26 +108,33 @@ func (c *Compiler) extractFuncName(name ast.Expr) string {
 	panic("Unsupported function name expression type")
 }
 
-func (c *Compiler) compileFuncArgs(args ast.Stmt) []int {
+func (c *Compiler) compileFuncArgs(args []ast.ArgsStmt) ([]int, []ArgMeta) {
 	var slots []int
-	block, ok := args.(ast.BlockStmt)
-	if !ok {
-		return slots
+	var argMeta []ArgMeta
+
+	for _, arg := range args {
+		argName := ""
+		if symExpr, ok := arg.ArgName.(ast.SymbolExpr); ok {
+			argName = symExpr.Value
+		} else {
+			panic("Function argument name must be a symbol")
+		}
+		slot := c.allocSlot(argName)
+		slots = append(slots, slot)
+
+		// Extract type name for type checking
+		typeName := ""
+		if symExpr, ok := arg.ArgType.(ast.SymbolExpr); ok {
+			typeName = symExpr.Value
+		}
+
+		argMeta = append(argMeta, ArgMeta{
+			Slot:     slot,
+			TypeName: typeName,
+		})
 	}
 
-	for _, arg := range block.Body {
-		exprStmt, ok := arg.(ast.ExpressionStmt)
-		if !ok {
-			continue
-		}
-		sym, ok := exprStmt.Expression.(ast.SymbolExpr)
-		if !ok {
-			continue
-		}
-		slot := c.allocSlot(sym.Value)
-		slots = append(slots, slot)
-	}
-	return slots
+	return slots, argMeta
 }
 
 func (c *Compiler) compileFuncBody(body ast.Stmt) {
@@ -134,22 +146,22 @@ func (c *Compiler) compileFuncBody(body ast.Stmt) {
 }
 
 func (c *Compiler) emitFuncReturn(returnType ast.Type) {
-	if t, ok := returnType.(ast.SymbolType); ok && t.Name == "void" {
-		c.emit(OP_RET)
-	}
+	// Always emit OP_RET at the end of a function to prevent fall-through
+	// For non-void functions without explicit return, this provides an implicit return
+	c.emit(OP_RET)
 }
 
 func (c *Compiler) compileIf(s ast.IfStmt) {
 	c.compileExpr(s.Condition)
 
 	jmpIfPos := c.currentPos()
-	c.emit(OP_JMP_IF, 0)
+	c.emit(OP_JMP_IF, 0, 0) // 2-byte address placeholder
 
 	c.compileIfBlock(s.Then)
 
 	if s.Else != nil {
 		jmpPos := c.currentPos()
-		c.emit(OP_JMP, 0)
+		c.emit(OP_JMP, 0, 0) // 2-byte address placeholder
 
 		elsePos := c.currentPos()
 		c.compileIfBlock(s.Else)
@@ -176,7 +188,7 @@ func (c *Compiler) compileFor(s ast.ForStmt) {
 
 	condPos := c.currentPos()
 	c.compileExpr(s.Condition)
-	c.emit(OP_JMP_IF, 0)
+	c.emit(OP_JMP_IF, 0, 0) // 2-byte address placeholder
 	jmpExitPos := c.currentPos()
 
 	for _, stmt := range s.Body {
@@ -185,34 +197,34 @@ func (c *Compiler) compileFor(s ast.ForStmt) {
 
 	c.compileStmt(s.Post)
 
-	c.emit(OP_JMP, byte(condPos))
+	c.emit(OP_JMP, byte(condPos>>8), byte(condPos&0xFF))
 
-	c.patchJump(jmpExitPos-1, c.currentPos())
+	c.patchJump(jmpExitPos-2, c.currentPos())
 }
 
 func (c *Compiler) compileWhile(s ast.WhileStmt) {
 	condPos := c.currentPos()
 	c.compileExpr(s.Condition)
-	c.emit(OP_JMP_IF, 0)
+	c.emit(OP_JMP_IF, 0, 0) // 2-byte address placeholder
 	jmpExitPos := c.currentPos()
 
 	for _, stmt := range s.Body {
 		c.compileStmt(stmt)
 	}
 
-	c.emit(OP_JMP, byte(condPos))
+	c.emit(OP_JMP, byte(condPos>>8), byte(condPos&0xFF))
 
-	c.patchJump(jmpExitPos-1, c.currentPos())
+	c.patchJump(jmpExitPos-2, c.currentPos())
 }
 
 func (c *Compiler) compileRequire(s ast.RequireStmt) {
 	c.compileExpr(s.Condition)
 
 	jmpToEndPos := c.currentPos()
-	c.emit(OP_JMP_IF, 0)
+	c.emit(OP_JMP_IF, 0, 0) // 2-byte address placeholder
 
 	jmpPastErrorPos := c.currentPos()
-	c.emit(OP_JMP, 0)
+	c.emit(OP_JMP, 0, 0) // 2-byte address placeholder
 
 	errorBlockPos := c.currentPos()
 	errIdx := c.addConst(s.Message)
@@ -248,12 +260,32 @@ func (c *Compiler) compileRegistryDeclare(s ast.RegistryDeclareStmt) {
 }
 
 func (c *Compiler) compileAgentStmt(s ast.AgentStmt) {
-	c.allocSlot(s.Identifier.(ast.SymbolExpr).Value)
-	identifierIdx := c.findConst(s.Identifier)
-	c.emit(OP_CONST, identifierIdx)
+	agentName := s.Identifier.(ast.SymbolExpr).Value
+	c.allocSlot(agentName)
 
+	// Get registry identifier
+	identifierIdx := c.findConst(s.Identifier)
+	if identifierIdx == 255 {
+		identifierIdx = c.addConst(s.Identifier)
+	}
+
+	// Get the registry object
+	c.emit(OP_CONST, identifierIdx)
 	c.emit(OP_REGISTRY_GET, byte(identifierIdx))
-	c.emit(OP_STORE, 0)
+
+	// Push agent hash, version, owner for validation
+	hashIdx := c.addConst(s.Hash)
+	versionIdx := c.addConst(s.Version)
+	ownerIdx := c.addConst(s.Owner)
+
+	c.emit(OP_CONST, hashIdx)
+	c.emit(OP_CONST, versionIdx)
+	c.emit(OP_CONST, ownerIdx)
+
+	// Validate agent against registry
+	c.emit(OP_AGENT_VALIDATE)
+
+	c.emit(OP_STORE, byte(c.Symbols[agentName]))
 }
 
 func (c *Compiler) compilePolicyStmt(s ast.PolicyStmt) {
@@ -277,6 +309,8 @@ func (c *Compiler) compilePolicyStmt(s ast.PolicyStmt) {
 		case ast.StringExpr:
 			valIdx := c.addConst(v.Value)
 			c.emit(OP_CONST, valIdx)
+		case ast.ArrayLiteralExpr:
+			c.compileExpr(v)
 		default:
 			panic(fmt.Sprintf("Unsupported policy rule value type: %T", v))
 		}
@@ -289,12 +323,28 @@ func (c *Compiler) compilePolicyStmt(s ast.PolicyStmt) {
 }
 
 func (c *Compiler) compileTypeDeclareStmt(s ast.TypeDeclareStmt) {
-	c.allocSlot(s.Name.(ast.SymbolExpr).Value)
+	typeName := s.Name.(ast.SymbolExpr).Value
+	c.allocSlot(typeName)
+
+	// Register the type in the type registry
+	typeMeta := TypeMeta{
+		Fields: make(map[string]string),
+	}
+	for key, value := range s.Fields {
+		if sym, ok := value.(ast.SymbolExpr); ok {
+			typeMeta.Fields[key] = sym.Value
+		}
+	}
+	c.Types[typeName] = typeMeta
 
 	identifierIdx := c.findConst(s.Name)
-	c.emit(OP_CONST, identifierIdx)
+	if identifierIdx == 255 {
+		identifierIdx = c.addConst(s.Name)
+	}
 
+	c.emit(OP_CONST, identifierIdx)
 	c.emit(OP_PUSH_OBJECT)
+
 	for key, value := range s.Fields {
 		keyIdx := c.addConst(key)
 		c.emit(OP_CONST, keyIdx)
@@ -317,5 +367,18 @@ func (c *Compiler) compileTypeDeclareStmt(s ast.TypeDeclareStmt) {
 	}
 
 	c.emit(OP_TYPE_DECLARE, byte(identifierIdx))
-	c.emit(OP_STORE, byte(c.Symbols[s.Name.(ast.SymbolExpr).Value]))
+	c.emit(OP_STORE, byte(c.Symbols[typeName]))
+}
+
+func (c *Compiler) compileEmitStmt(s ast.EmitStmt) {
+	eventNameIdx := c.addConst(s.EventName)
+	c.emit(OP_CONST, eventNameIdx)
+
+	if s.Arguments != nil {
+		c.compileExpr(s.Arguments)
+	} else {
+		c.emit(OP_ERR)
+	}
+
+	c.emit(OP_EMIT, byte(eventNameIdx))
 }

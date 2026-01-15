@@ -34,13 +34,19 @@ func parse_stmt(p *parser) ast.Stmt {
 	}
 }
 
-func parse_arguments(p *parser) ast.Stmt {
+func parse_arguments(p *parser) []ast.ArgsStmt {
 	p.expect(lexer.OPEN_PAREN)
 
-	body := []ast.Stmt{}
+	body := []ast.ArgsStmt{}
 	for p.currentTokenType() != lexer.CLOSE_PAREN {
 		expr := parse_expr(p, defalt_bp)
-		body = append(body, ast.ExpressionStmt{Expression: expr})
+		p.expect(lexer.COLON)
+		exprType := parse_expr(p, defalt_bp)
+
+		body = append(body, ast.ArgsStmt{
+			ArgName: expr,
+			ArgType: exprType,
+		})
 
 		if p.currentTokenType() == lexer.COMMA {
 			p.advance()
@@ -48,7 +54,7 @@ func parse_arguments(p *parser) ast.Stmt {
 	}
 
 	p.expect(lexer.CLOSE_PAREN)
-	return ast.BlockStmt{Body: body}
+	return body
 }
 
 func parse_contract_decl(p *parser) ast.Stmt {
@@ -297,5 +303,27 @@ func parse_type_stmt(p *parser) ast.Stmt {
 	return ast.TypeDeclareStmt{
 		Name:   typeName,
 		Fields: fields,
+	}
+}
+
+func parse_emit_stmt(p *parser) ast.Stmt {
+	// emit format
+	// example: emit("EventName", { arg1: val1, arg2: val2 })
+	p.expect(lexer.EMIT)
+	p.expect(lexer.OPEN_PAREN)
+
+	eventName := parse_expr(p, defalt_bp)
+
+	var args ast.Expr
+	if p.currentTokenType() == lexer.COMMA {
+		p.advance()
+		args = parse_expr(p, defalt_bp)
+	}
+
+	p.expect(lexer.CLOSE_PAREN)
+
+	return ast.EmitStmt{
+		EventName: eventName,
+		Arguments: args,
 	}
 }

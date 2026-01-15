@@ -53,6 +53,12 @@ func numberHandler(lex *lexer, regex *regexp.Regexp) {
 	lex.advanceN(len(match))
 }
 
+func hexNumberHandler(lex *lexer, regex *regexp.Regexp) {
+	match := regex.FindString(lex.remainder())
+	lex.push(NewToken(HEX_NUMBER, match))
+	lex.advanceN(len(match))
+}
+
 func stringHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindStringIndex(lex.remainder())
 	stringLiteral := lex.remainder()[match[0]+1 : match[1]-1]
@@ -95,6 +101,7 @@ func createLexer(input string) *lexer {
 			{regexp.MustCompile(`\s+`), skipHandler},
 			{regexp.MustCompile(`\/\/*`), commentHandler},
 			{regexp.MustCompile(`"[^"]*"`), stringHandler},
+			{regexp.MustCompile(`0x[0-9a-fA-F]+`), hexNumberHandler},
 			{regexp.MustCompile(`[0-9]+(\.[0-9]+)?`), numberHandler},
 			{regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`), symbolHandler},
 			{regexp.MustCompile(`\[`), defaultHandler(OPEN_BRACKET, "[")},

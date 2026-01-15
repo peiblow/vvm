@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"github.com/peiblow/vvm/ast"
 )
 
@@ -29,6 +31,8 @@ func (c *Compiler) compileExpr(expr ast.Expr) {
 		c.compileArrayAccess(e)
 	case ast.MemberExpr:
 		c.compileMember(e)
+	case ast.ObjectAssignmentExpr:
+		c.compileObjectLiteral(e)
 	case ast.ThisExpr:
 		c.emit(OP_SLOAD, 0)
 	case ast.NullExpr:
@@ -76,8 +80,42 @@ func (c *Compiler) convertArrayItems(items []ast.Expr) []interface{} {
 			result[i] = it.Value
 		case ast.ArrayLiteralExpr:
 			result[i] = c.convertArrayItems(it.Items)
+		case ast.ObjectAssignmentExpr:
+			result[i] = c.convertObjectToMap(it)
 		default:
-			panic("Array item type not supported")
+			panic(fmt.Sprintf("Array item type not supported: %T", item))
+		}
+	}
+	return result
+}
+
+// convertObjectToMap converts an ObjectAssignmentExpr to a Go map
+func (c *Compiler) convertObjectToMap(obj ast.ObjectAssignmentExpr) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, field := range obj.Fields {
+		// Extract key as string
+		var key string
+		switch k := field.Key.(type) {
+		case ast.SymbolExpr:
+			key = k.Value
+		case ast.StringExpr:
+			key = k.Value
+		default:
+			panic(fmt.Sprintf("Object key type not supported: %T", field.Key))
+		}
+
+		// Extract value
+		switch v := field.Value.(type) {
+		case ast.NumberExpr:
+			result[key] = v.Value
+		case ast.StringExpr:
+			result[key] = v.Value
+		case ast.ArrayLiteralExpr:
+			result[key] = c.convertArrayItems(v.Items)
+		case ast.ObjectAssignmentExpr:
+			result[key] = c.convertObjectToMap(v)
+		default:
+			panic(fmt.Sprintf("Object property value type not supported: %T", field.Value))
 		}
 	}
 	return result
@@ -104,13 +142,14 @@ func (c *Compiler) compileAssignment(e ast.AssignmentExpr) {
 // compileSymbolAssignment compila atribuição a um símbolo
 func (c *Compiler) compileSymbolAssignment(name string, right ast.Expr) {
 	slot := c.getSlot(name)
-	c.emit(OP_STORE, byte(slot))
 
 	if objExpr, ok := right.(ast.ObjectAssignmentExpr); ok {
 		c.compileObjectAssignment(objExpr, slot)
 	} else {
 		c.compileExpr(right)
 	}
+
+	c.emit(OP_STORE, byte(slot))
 }
 
 // compileMemberAssignment compila atribuição a membro de objeto
@@ -144,6 +183,20 @@ func (c *Compiler) compileObjectAssignment(obj ast.ObjectAssignmentExpr, slot in
 	}
 
 	c.emit(OP_STORE, byte(slot))
+}
+
+// compileObjectLiteral compila um objeto literal como expressão (deixa na stack)
+func (c *Compiler) compileObjectLiteral(obj ast.ObjectAssignmentExpr) {
+	c.emit(OP_PUSH_OBJECT)
+
+	for _, prop := range obj.Fields {
+		key := prop.Key.(ast.SymbolExpr).Value
+		idx := c.addConst(key)
+		c.emit(OP_CONST, idx)
+		c.compileExpr(prop.Value)
+		c.emit(OP_SET_PROPERTY)
+	}
+	// Object stays on stack (no STORE)
 }
 
 // compileBinary compila uma expressão binária
@@ -180,6 +233,13 @@ func (c *Compiler) compileBinary(e ast.BinaryExpr) {
 
 // compileCall compila uma chamada de função
 func (c *Compiler) compileCall(e ast.CallExpr) {
+	// Validate argument types before compiling
+	if callee, ok := e.Calle.(ast.SymbolExpr); ok {
+		if err := c.ValidateFunctionCall(callee.Value, e.Arguments); err != nil {
+			panic(fmt.Sprintf("Type error: %s", err.Error()))
+		}
+	}
+
 	// Compila argumentos
 	for _, arg := range e.Arguments {
 		c.compileExpr(arg)
@@ -195,7 +255,7 @@ func (c *Compiler) compileBuiltinOrUserCall(name string) {
 	switch name {
 	case "print":
 		c.emit(OP_PRINT)
-	case "length":
+	case "len", "length":
 		c.emit(OP_LENGTH)
 	case "_transfer":
 		c.emit(OP_TRANSFER)
@@ -206,7 +266,8 @@ func (c *Compiler) compileBuiltinOrUserCall(name string) {
 	default:
 		// Chamada de função de usuário
 		addr := c.Functions[name]
-		c.emit(OP_CALL, byte(addr.Addr))
+		// Use 2-byte address for function calls (high byte, low byte)
+		c.emit(OP_CALL, byte(addr.Addr>>8), byte(addr.Addr&0xFF))
 	}
 }
 
