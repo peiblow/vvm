@@ -38,7 +38,13 @@ func New(c *compiler.Compiler) *VM {
 	}
 }
 
-func (vm *VM) Run() {
+type ExecutionResult struct {
+	Success bool
+	Journal []JournalEvent
+	Error   error
+}
+
+func (vm *VM) Run() ExecutionResult {
 	code := vm.compiler.Code
 
 	for {
@@ -125,11 +131,17 @@ func (vm *VM) Run() {
 		case compiler.OP_BALANCE_OF:
 			fmt.Println("BalanceOf has been made :D")
 		case compiler.OP_HALT:
-			fmt.Println("End of program.")
-			return
+			return ExecutionResult{
+				Success: true,
+				Journal: vm.journal,
+				Error:   nil,
+			}
 		default:
-			fmt.Printf("Unknown opcode encountered: 0x%02X\n", op)
-			return
+			return ExecutionResult{
+				Success: false,
+				Journal: vm.journal,
+				Error:   fmt.Errorf("unknown opcode: 0x%02X", op),
+			}
 		}
 	}
 }

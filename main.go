@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/peiblow/vvm/commiter"
 	"github.com/peiblow/vvm/compiler"
 	"github.com/peiblow/vvm/lexer"
 	"github.com/peiblow/vvm/parser"
@@ -16,14 +18,25 @@ func main() {
 	ast := parser.Parse(tokens)
 	// litter.Dump(ast)
 
-	// Compila o código
+	// Code Compilation
 	cmpl := compiler.New()
 	cmpl.CompileBlock(ast)
 
-	// Debug (descomente para ver informações de debug)
+	// Debug Bytecode
 	// cmpl.Debug()
 
-	// Executa o programa
+	// Execute VM
 	virtualMachine := vm.New(cmpl)
-	virtualMachine.Run()
+	result := virtualMachine.Run()
+	if result.Success {
+		println("Program executed successfully.")
+
+		committer := &commiter.MockCommitter{}
+		if err := committer.Commit(result.Journal); err != nil {
+			fmt.Println("❌ Commit failed:", err)
+			return
+		}
+	} else {
+		println("Program execution failed:", result.Error.Error())
+	}
 }
