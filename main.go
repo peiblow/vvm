@@ -17,7 +17,7 @@ func main() {
 	switch mode {
 	case "deploy":
 		deployContract()
-	case "run":
+	case "exec":
 		if len(os.Args) < 3 {
 			fmt.Println("Usage: run <function_name> [args...]")
 			return
