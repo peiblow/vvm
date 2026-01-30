@@ -41,9 +41,7 @@ func parse_primary_expr(p *parser) ast.Expr {
 		}
 	case lexer.HEX_NUMBER:
 		hexStr := p.advance().Literal
-		// For short hex values (addresses), parse as number
-		// For long hex values (hashes), keep as string
-		if len(hexStr) <= 18 { // 0x + 16 hex digits fits in int64
+		if len(hexStr) <= 18 {
 			number, err := strconv.ParseInt(hexStr[2:], 16, 64)
 			if err == nil {
 				return ast.NumberExpr{
@@ -51,7 +49,7 @@ func parse_primary_expr(p *parser) ast.Expr {
 				}
 			}
 		}
-		// Long hex value - keep as string
+
 		return ast.StringExpr{
 			Value: hexStr,
 		}

@@ -307,8 +307,6 @@ func parse_type_stmt(p *parser) ast.Stmt {
 }
 
 func parse_emit_stmt(p *parser) ast.Stmt {
-	// emit format
-	// example: emit("EventName", { arg1: val1, arg2: val2 })
 	p.expect(lexer.EMIT)
 	p.expect(lexer.OPEN_PAREN)
 

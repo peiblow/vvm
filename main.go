@@ -22,14 +22,21 @@ func main() {
 			fmt.Println("Usage: run <function_name> [args...]")
 			return
 		}
+
 		funcName := os.Args[2]
+		args := os.Args[3:]
+		var ar []interface{}
+		for _, a := range args {
+			ar = append(ar, a)
+		}
+
 		runContract(&compiler.ContractArtifact{
-			Bytecode:     []byte{0x01, 0x02, 0x03}, // Placeholder bytecode
+			Bytecode:     []byte{0x01, 0x02, 0x03},
 			ConstPool:    []interface{}{"Hello, World!", 42},
 			Functions:    map[string]compiler.FunctionMeta{},
 			FunctionName: map[int]string{},
 			Types:        map[string]compiler.TypeMeta{},
-		}, funcName)
+		}, funcName, ar)
 	default:
 		fmt.Println("Unknown mode. Use 'deploy' or 'run'.")
 	}
