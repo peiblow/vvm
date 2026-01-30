@@ -12,22 +12,58 @@ import (
 )
 
 func main() {
-	content, _ := os.ReadFile("00.snx")
+	mode := os.Args[1]
+
+	switch mode {
+	case "deploy":
+		deployContract()
+	case "run":
+		if len(os.Args) < 3 {
+			fmt.Println("Usage: run <function_name> [args...]")
+			return
+		}
+		funcName := os.Args[2]
+		runContract(&compiler.ContractArtifact{
+			Bytecode:     []byte{0x01, 0x02, 0x03}, // Placeholder bytecode
+			ConstPool:    []interface{}{"Hello, World!", 42},
+			Functions:    map[string]compiler.FunctionMeta{},
+			FunctionName: map[int]string{},
+			Types:        map[string]compiler.TypeMeta{},
+		}, funcName)
+	default:
+		fmt.Println("Unknown mode. Use 'deploy' or 'run'.")
+	}
+}
+
+func deployContract() {
+	content, _ := os.ReadFile("./contracts/00.snx")
 	tokens := lexer.Tokenize(string(content))
 
 	ast := parser.Parse(tokens)
 	// litter.Dump(ast)
 
-	// Code Compilation
 	cmpl := compiler.New()
 	cmpl.CompileBlock(ast)
 
 	// Debug Bytecode
 	// cmpl.Debug()
 
-	// Execute VM
-	virtualMachine := vm.New(cmpl)
-	result := virtualMachine.Run()
+	artifact := cmpl.Artifact()
+	fmt.Println("Contract deployed successfully.", artifact)
+}
+
+func runContract(contractArtifact *compiler.ContractArtifact, funcName string, args ...interface{}) {
+	virtualMachine := vm.NewFromArtifact(contractArtifact)
+	initResult := virtualMachine.Run()
+	if !initResult.Success {
+		fmt.Println("Contract initialization failed:", initResult.Error.Error())
+		return
+	}
+
+	contractArtifact.InitStorage = virtualMachine.GetStorage()
+
+	result := virtualMachine.RunFunction(funcName, args...)
+
 	if result.Success {
 		println("Program executed successfully.")
 

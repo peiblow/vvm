@@ -6,7 +6,6 @@ import (
 	"github.com/peiblow/vvm/ast"
 )
 
-// ArgMeta holds argument metadata including name and type
 type ArgMeta struct {
 	Slot     int
 	TypeName string
@@ -15,12 +14,11 @@ type ArgMeta struct {
 type FunctionMeta struct {
 	Addr    int
 	Args    []int
-	ArgMeta []ArgMeta // Argument metadata with types
+	ArgMeta []ArgMeta
 }
 
-// TypeMeta holds type declaration metadata
 type TypeMeta struct {
-	Fields map[string]string // field name -> type name
+	Fields map[string]string
 }
 
 type Compiler struct {
@@ -29,7 +27,7 @@ type Compiler struct {
 	ConstPool    []interface{}
 	Functions    map[string]FunctionMeta
 	FunctionName map[int]string
-	Types        map[string]TypeMeta // Registered types
+	Types        map[string]TypeMeta
 	NextSlot     int
 	isInFunction bool
 }
@@ -46,7 +44,26 @@ func New() *Compiler {
 	}
 }
 
-// GetExpectedArgType returns the expected type for a function argument
+type ContractArtifact struct {
+	Bytecode     []byte
+	ConstPool    []interface{}
+	Functions    map[string]FunctionMeta
+	FunctionName map[int]string
+	Types        map[string]TypeMeta
+	InitStorage  map[int]interface{}
+}
+
+func (c *Compiler) Artifact() *ContractArtifact {
+	return &ContractArtifact{
+		Bytecode:     c.Code,
+		ConstPool:    c.ConstPool,
+		Functions:    c.Functions,
+		FunctionName: c.FunctionName,
+		Types:        c.Types,
+		InitStorage:  make(map[int]interface{}),
+	}
+}
+
 func (c *Compiler) GetExpectedArgType(funcName string, argIndex int) string {
 	if meta, ok := c.Functions[funcName]; ok {
 		if argIndex < len(meta.ArgMeta) {
@@ -56,7 +73,6 @@ func (c *Compiler) GetExpectedArgType(funcName string, argIndex int) string {
 	return ""
 }
 
-// GetActualType infers the type of an expression
 func (c *Compiler) GetActualType(expr ast.Expr) string {
 	switch e := expr.(type) {
 	case ast.NumberExpr:
@@ -67,11 +83,9 @@ func (c *Compiler) GetActualType(expr ast.Expr) string {
 	case ast.StringExpr:
 		return "String"
 	case ast.SymbolExpr:
-		// Check if it's a known type instance
 		if _, ok := c.Types[e.Value]; ok {
 			return e.Value
 		}
-		// Could be a variable, return unknown for now
 		return "Unknown"
 	case ast.ObjectAssignmentExpr:
 		if sym, ok := e.Name.(ast.SymbolExpr); ok {
@@ -83,34 +97,28 @@ func (c *Compiler) GetActualType(expr ast.Expr) string {
 	}
 }
 
-// TypesAreCompatible checks if actualType is compatible with expectedType
 func (c *Compiler) TypesAreCompatible(expectedType, actualType string) bool {
-	// If types match exactly, they're compatible
 	if expectedType == actualType {
 		return true
 	}
 
-	// If actual type is unknown, we can't validate at compile time
 	if actualType == "Unknown" {
 		return true
 	}
 
-	// Object literals can be compatible with custom types (structural typing)
 	if actualType == "Object" {
-		// If expected type is a declared custom type, we'll do structural validation
 		if _, isCustomType := c.Types[expectedType]; isCustomType {
-			return true // Structural validation happens in ValidateObjectAgainstType
+			return true
 		}
 	}
 
-	// Primitive type aliases
 	primitiveAliases := map[string][]string{
 		"Int":     {"UInt", "Float", "Number"},
 		"UInt":    {"Int", "Float", "Number"},
 		"Float":   {"Int", "UInt", "Number"},
 		"Number":  {"Int", "UInt", "Float"},
 		"String":  {},
-		"Address": {"String", "Int", "UInt"}, // Addresses can be hex numbers (parsed as Int)
+		"Address": {"String", "Int", "UInt"},
 		"Proof":   {"String"},
 	}
 
@@ -122,9 +130,7 @@ func (c *Compiler) TypesAreCompatible(expectedType, actualType string) bool {
 		}
 	}
 
-	// Check if expectedType is a declared type and actualType is a primitive
 	if _, isCustomType := c.Types[expectedType]; isCustomType {
-		// Custom types are not compatible with primitives
 		switch actualType {
 		case "Int", "UInt", "Float", "Number", "String":
 			return false
@@ -134,14 +140,12 @@ func (c *Compiler) TypesAreCompatible(expectedType, actualType string) bool {
 	return false
 }
 
-// ValidateObjectAgainstType validates that an object literal matches a custom type's structure
 func (c *Compiler) ValidateObjectAgainstType(obj ast.ObjectAssignmentExpr, typeName string) error {
 	typeMeta, exists := c.Types[typeName]
 	if !exists {
 		return fmt.Errorf("unknown type '%s'", typeName)
 	}
 
-	// Build a map of fields provided in the object literal
 	providedFields := make(map[string]ast.Expr)
 	for _, field := range obj.Fields {
 		if key, ok := field.Key.(ast.SymbolExpr); ok {
@@ -149,7 +153,6 @@ func (c *Compiler) ValidateObjectAgainstType(obj ast.ObjectAssignmentExpr, typeN
 		}
 	}
 
-	// Check that all required fields are present
 	for fieldName, expectedFieldType := range typeMeta.Fields {
 		providedValue, exists := providedFields[fieldName]
 		if !exists {
@@ -157,7 +160,6 @@ func (c *Compiler) ValidateObjectAgainstType(obj ast.ObjectAssignmentExpr, typeN
 				fieldName, expectedFieldType, typeName)
 		}
 
-		// Validate field type
 		actualFieldType := c.GetActualType(providedValue)
 		if !c.TypesAreCompatible(expectedFieldType, actualFieldType) {
 			return fmt.Errorf("field '%s' has type '%s', expected '%s' for type '%s'",
@@ -168,11 +170,9 @@ func (c *Compiler) ValidateObjectAgainstType(obj ast.ObjectAssignmentExpr, typeN
 	return nil
 }
 
-// ValidateFunctionCall validates argument types for a function call
 func (c *Compiler) ValidateFunctionCall(funcName string, args []ast.Expr) error {
 	funcMeta, exists := c.Functions[funcName]
 	if !exists {
-		// Built-in function or function not yet defined, skip validation
 		return nil
 	}
 
@@ -185,14 +185,13 @@ func (c *Compiler) ValidateFunctionCall(funcName string, args []ast.Expr) error 
 		expectedType := funcMeta.ArgMeta[i].TypeName
 		actualType := c.GetActualType(arg)
 
-		// Special handling for object literals passed to custom types
 		if actualType == "Object" {
 			if _, isCustomType := c.Types[expectedType]; isCustomType {
 				if objExpr, ok := arg.(ast.ObjectAssignmentExpr); ok {
 					if err := c.ValidateObjectAgainstType(objExpr, expectedType); err != nil {
 						return err
 					}
-					continue // Validation passed
+					continue
 				}
 			}
 		}
@@ -210,14 +209,12 @@ func (c *Compiler) emit(opcodes ...byte) {
 	c.Code = append(c.Code, opcodes...)
 }
 
-// addConst adiciona uma constante ao pool e retorna seu índice
 func (c *Compiler) addConst(val interface{}) byte {
 	idx := len(c.ConstPool)
 	c.ConstPool = append(c.ConstPool, val)
 	return byte(idx)
 }
 
-// procuta na constPool e retorna o índice se encontrado, ou -1 se não encontrado
 func (c *Compiler) findConst(val interface{}) byte {
 	for i, v := range c.ConstPool {
 		if v == val {
@@ -227,7 +224,6 @@ func (c *Compiler) findConst(val interface{}) byte {
 	return byte(255)
 }
 
-// allocSlot aloca um slot para uma variável
 func (c *Compiler) allocSlot(name string) int {
 	slot := c.NextSlot
 	c.Symbols[name] = slot
@@ -235,7 +231,6 @@ func (c *Compiler) allocSlot(name string) int {
 	return slot
 }
 
-// getSlot obtém o slot de uma variável, alocando se necessário
 func (c *Compiler) getSlot(name string) int {
 	slot, ok := c.Symbols[name]
 	if !ok {
@@ -244,13 +239,11 @@ func (c *Compiler) getSlot(name string) int {
 	return slot
 }
 
-// GetFuncArgs retorna os argumentos de uma função pelo endereço
 func (c *Compiler) GetFuncArgs(addr int) []int {
 	funcName := c.FunctionName[addr]
 	return c.Functions[funcName].Args
 }
 
-// CompileBlock compila um bloco de código principal (adiciona HALT no final)
 func (c *Compiler) CompileBlock(block ast.BlockStmt) {
 	for _, stmt := range block.Body {
 		c.compileStmt(stmt)
@@ -258,19 +251,16 @@ func (c *Compiler) CompileBlock(block ast.BlockStmt) {
 	c.emit(OP_HALT)
 }
 
-// compileBlock compila um bloco interno (sem HALT)
 func (c *Compiler) compileBlock(block ast.BlockStmt) {
 	for _, stmt := range block.Body {
 		c.compileStmt(stmt)
 	}
 }
 
-// currentPos retorna a posição atual no código
 func (c *Compiler) currentPos() int {
 	return len(c.Code)
 }
 
-// patchJump corrige um salto em uma posição específica (2 bytes: high, low)
 func (c *Compiler) patchJump(pos int, target int) {
 	c.Code[pos] = byte(target >> 8)     // high byte
 	c.Code[pos+1] = byte(target & 0xFF) // low byte

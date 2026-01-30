@@ -73,7 +73,7 @@ func (c *Compiler) compileFunc(s ast.FuncStmt) {
 	c.isInFunction = true
 
 	skipFuncPos := c.currentPos()
-	c.emit(OP_JMP, 0, 0) // 2-byte address placeholder
+	c.emit(OP_JMP, 0, 0)
 
 	funcMeta := FunctionMeta{
 		Addr:    c.currentPos(),
@@ -146,8 +146,6 @@ func (c *Compiler) compileFuncBody(body ast.Stmt) {
 }
 
 func (c *Compiler) emitFuncReturn(returnType ast.Type) {
-	// Always emit OP_RET at the end of a function to prevent fall-through
-	// For non-void functions without explicit return, this provides an implicit return
 	c.emit(OP_RET)
 }
 
@@ -155,13 +153,13 @@ func (c *Compiler) compileIf(s ast.IfStmt) {
 	c.compileExpr(s.Condition)
 
 	jmpIfPos := c.currentPos()
-	c.emit(OP_JMP_IF, 0, 0) // 2-byte address placeholder
+	c.emit(OP_JMP_IF, 0, 0)
 
 	c.compileIfBlock(s.Then)
 
 	if s.Else != nil {
 		jmpPos := c.currentPos()
-		c.emit(OP_JMP, 0, 0) // 2-byte address placeholder
+		c.emit(OP_JMP, 0, 0)
 
 		elsePos := c.currentPos()
 		c.compileIfBlock(s.Else)
@@ -188,7 +186,7 @@ func (c *Compiler) compileFor(s ast.ForStmt) {
 
 	condPos := c.currentPos()
 	c.compileExpr(s.Condition)
-	c.emit(OP_JMP_IF, 0, 0) // 2-byte address placeholder
+	c.emit(OP_JMP_IF, 0, 0)
 	jmpExitPos := c.currentPos()
 
 	for _, stmt := range s.Body {
@@ -205,7 +203,7 @@ func (c *Compiler) compileFor(s ast.ForStmt) {
 func (c *Compiler) compileWhile(s ast.WhileStmt) {
 	condPos := c.currentPos()
 	c.compileExpr(s.Condition)
-	c.emit(OP_JMP_IF, 0, 0) // 2-byte address placeholder
+	c.emit(OP_JMP_IF, 0, 0)
 	jmpExitPos := c.currentPos()
 
 	for _, stmt := range s.Body {
@@ -221,10 +219,10 @@ func (c *Compiler) compileRequire(s ast.RequireStmt) {
 	c.compileExpr(s.Condition)
 
 	jmpToEndPos := c.currentPos()
-	c.emit(OP_JMP_IF, 0, 0) // 2-byte address placeholder
+	c.emit(OP_JMP_IF, 0, 0)
 
 	jmpPastErrorPos := c.currentPos()
-	c.emit(OP_JMP, 0, 0) // 2-byte address placeholder
+	c.emit(OP_JMP, 0, 0)
 
 	errorBlockPos := c.currentPos()
 	errIdx := c.addConst(s.Message)

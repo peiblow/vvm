@@ -44,7 +44,69 @@ type ExecutionResult struct {
 	Error   error
 }
 
+func NewFromArtifact(artifact *compiler.ContractArtifact) *VM {
+	cmpl := &compiler.Compiler{
+		Code:         artifact.Bytecode,
+		ConstPool:    artifact.ConstPool,
+		Functions:    artifact.Functions,
+		FunctionName: artifact.FunctionName,
+		Types:        artifact.Types,
+	}
+	vm := New(cmpl)
+
+	if artifact.InitStorage != nil {
+		for k, v := range artifact.InitStorage {
+			vm.storage[k] = v
+		}
+	}
+	return vm
+}
+
+func (vm *VM) GetStorage() map[int]interface{} {
+	storageCopy := make(map[int]interface{})
+	for k, v := range vm.storage {
+		storageCopy[k] = v
+	}
+	return storageCopy
+}
+
 func (vm *VM) Run() ExecutionResult {
+	return vm.execute()
+}
+
+// RunFunction executes a specific function by name with the given arguments
+func (vm *VM) RunFunction(funcName string, args ...interface{}) ExecutionResult {
+	funcMeta, exists := vm.compiler.Functions[funcName]
+	if !exists {
+		return ExecutionResult{
+			Success: false,
+			Journal: vm.journal,
+			Error:   fmt.Errorf("function '%s' not found in contract", funcName),
+		}
+	}
+
+	// Validate argument count
+	if len(args) != len(funcMeta.Args) {
+		return ExecutionResult{
+			Success: false,
+			Journal: vm.journal,
+			Error:   fmt.Errorf("function '%s' expects %d argument(s), got %d", funcName, len(funcMeta.Args), len(args)),
+		}
+	}
+
+	// Store arguments in their respective slots
+	for i, arg := range args {
+		slot := funcMeta.Args[i]
+		vm.storage[slot] = arg
+	}
+
+	// Set instruction pointer to function address
+	vm.ip = funcMeta.Addr
+
+	return vm.execute()
+}
+
+func (vm *VM) execute() ExecutionResult {
 	code := vm.compiler.Code
 
 	for {
