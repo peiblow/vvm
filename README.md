@@ -34,14 +34,17 @@ This project explores language design, compilers, and virtual machines with a fo
 - Supports 2-byte jump addresses for programs up to 64KB
 - Constant pool for strings, numbers, arrays, and objects
 - Symbol table for variable/slot management
-- Function metadata with argument tracking
+- Function metadata with argument tracking and type information
+- **ContractArtifact** - Serializable compilation output with bytecode, functions, types, and initialized storage
 
 ### Virtual Machine (VM)
 
 - **Stack-based** architecture
 - **Call stack** for function calls and returns
-- **Storage** system for runtime variables
+- **Storage** system for runtime variables with pre-initialization support
 - **Journal** for event logging with SHA-256 hashes
+- **Function execution** - Execute specific functions by name with `RunFunction()`
+- **InitStorage** - Pre-load immutable state (policies, registries) from deployed contracts
 - Built-in operations: arithmetic, comparison, logical, array access
 
 ### Supported Types
@@ -122,15 +125,35 @@ contract Synx {
 ## 🚀 Running
 
 ```bash
-# Run the default program (00.snx)
-go run .
+# Deploy a contract (compiles and initializes)
+go run . deploy
 
-# Example output:
+# Execute a specific function from a deployed contract
+go run . exec <function_name> [args...]
+
+# Example output for deploy:
 # Registry '{CreditScoreFL}' created with hash: 0xdfc2c348...
 # Agent 'CreditScoreFL' validated successfully
-# Evaluating decision for client: 3740555007
-# Event emitted: Type=CreditApproved, Hash=0x02bcba75...
-# End of program.
+# Contract deployed successfully.
+```
+
+### Execution Model
+
+The VM supports a **two-phase execution model**:
+
+1. **Deploy Phase** - Compiles the contract, runs initialization code (registries, agents, policies, types), and captures the initialized storage state into the `ContractArtifact`.
+
+2. **Exec Phase** - Executes a specific function by name with pre-loaded storage. Policies, registries, and types are immutable and available from the artifact.
+
+```go
+// Deploy: compile and initialize
+artifact := compiler.Artifact()
+vm := vm.NewFromArtifact(artifact)
+vm.Run() // Runs initialization
+artifact.InitStorage = vm.GetStorage() // Capture state
+
+// Exec: run specific function with initialized state
+vm.RunFunction("approve", decisionObject)
 ```
 
 ---
@@ -153,7 +176,9 @@ go run .
 
 ```
 vvm/
-├── main.go           # Entry point
+├── main.go           # Entry point (deploy/exec modes)
+├── commiter/         # Journal commit handlers
+│   └── commiter.go
 ├── lexer/            # Tokenizer
 │   ├── lexer.go
 │   └── token.go
