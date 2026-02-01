@@ -54,18 +54,42 @@ func NewFromArtifact(artifact *compiler.ContractArtifact) *VM {
 	}
 	vm := New(cmpl)
 
+	// Deep copy InitStorage to ensure execution doesn't modify the artifact
 	if artifact.InitStorage != nil {
 		for k, v := range artifact.InitStorage {
-			vm.storage[k] = v
+			vm.storage[k] = deepCopy(v)
 		}
 	}
 	return vm
 }
 
+func deepCopy(v interface{}) interface{} {
+	if v == nil {
+		return nil
+	}
+
+	switch val := v.(type) {
+	case map[string]interface{}:
+		copied := make(map[string]interface{}, len(val))
+		for k, v := range val {
+			copied[k] = deepCopy(v)
+		}
+		return copied
+	case []interface{}:
+		copied := make([]interface{}, len(val))
+		for i, v := range val {
+			copied[i] = deepCopy(v)
+		}
+		return copied
+	default:
+		return val
+	}
+}
+
 func (vm *VM) GetStorage() map[int]interface{} {
 	storageCopy := make(map[int]interface{})
 	for k, v := range vm.storage {
-		storageCopy[k] = v
+		storageCopy[k] = deepCopy(v)
 	}
 	return storageCopy
 }
@@ -85,7 +109,6 @@ func (vm *VM) RunFunction(funcName string, args ...interface{}) ExecutionResult 
 		}
 	}
 
-	// Validate argument count
 	if len(args) != len(funcMeta.Args) {
 		return ExecutionResult{
 			Success: false,
@@ -94,13 +117,11 @@ func (vm *VM) RunFunction(funcName string, args ...interface{}) ExecutionResult 
 		}
 	}
 
-	// Store arguments in their respective slots
 	for i, arg := range args {
 		slot := funcMeta.Args[i]
 		vm.storage[slot] = arg
 	}
 
-	// Set instruction pointer to function address
 	vm.ip = funcMeta.Addr
 
 	return vm.execute()

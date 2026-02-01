@@ -110,13 +110,6 @@ contract Synx {
       amount: decision.amount
     })
   }
-
-  approve({
-    model_id: "CreditScoreFL",
-    client: 0xDEF456FF,
-    score: 700,
-    amount: 10000
-  })
 }
 ```
 

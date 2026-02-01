@@ -2,84 +2,30 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"net"
 
-	"github.com/peiblow/vvm/commiter"
-	"github.com/peiblow/vvm/compiler"
-	"github.com/peiblow/vvm/lexer"
-	"github.com/peiblow/vvm/parser"
 	"github.com/peiblow/vvm/vm"
 )
 
 func main() {
-	mode := os.Args[1]
+	runtime := vm.NewRuntime()
 
-	switch mode {
-	case "deploy":
-		deployContract()
-	case "exec":
-		if len(os.Args) < 3 {
-			fmt.Println("Usage: run <function_name> [args...]")
-			return
-		}
-
-		funcName := os.Args[2]
-		args := os.Args[3:]
-		var ar []interface{}
-		for _, a := range args {
-			ar = append(ar, a)
-		}
-
-		runContract(&compiler.ContractArtifact{
-			Bytecode:     []byte{0x01, 0x02, 0x03},
-			ConstPool:    []interface{}{"Hello, World!", 42},
-			Functions:    map[string]compiler.FunctionMeta{},
-			FunctionName: map[int]string{},
-			Types:        map[string]compiler.TypeMeta{},
-		}, funcName, ar)
-	default:
-		fmt.Println("Unknown mode. Use 'deploy' or 'run'.")
-	}
-}
-
-func deployContract() {
-	content, _ := os.ReadFile("./contracts/00.snx")
-	tokens := lexer.Tokenize(string(content))
-
-	ast := parser.Parse(tokens)
-	// litter.Dump(ast)
-
-	cmpl := compiler.New()
-	cmpl.CompileBlock(ast)
-
-	// Debug Bytecode
-	// cmpl.Debug()
-
-	artifact := cmpl.Artifact()
-	fmt.Println("Contract deployed successfully.", artifact)
-}
-
-func runContract(contractArtifact *compiler.ContractArtifact, funcName string, args ...interface{}) {
-	virtualMachine := vm.NewFromArtifact(contractArtifact)
-	initResult := virtualMachine.Run()
-	if !initResult.Success {
-		fmt.Println("Contract initialization failed:", initResult.Error.Error())
+	ln, err := net.Listen("tcp", ":8332")
+	if err != nil {
+		fmt.Println("Error starting server:", err)
 		return
 	}
+	defer ln.Close()
 
-	contractArtifact.InitStorage = virtualMachine.GetStorage()
+	fmt.Println("VVM Runtime listening on :8332")
 
-	result := virtualMachine.RunFunction(funcName, args...)
-
-	if result.Success {
-		println("Program executed successfully.")
-
-		committer := &commiter.MockCommitter{}
-		if err := committer.Commit(result.Journal); err != nil {
-			fmt.Println("❌ Commit failed:", err)
-			return
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection:", err)
+			continue
 		}
-	} else {
-		println("Program execution failed:", result.Error.Error())
+
+		go runtime.HandleConnection(conn)
 	}
 }
