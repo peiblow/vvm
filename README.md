@@ -40,11 +40,11 @@ This project explores language design, compilers, and virtual machines with a fo
 ### Virtual Machine (VM)
 
 - **Stack-based** architecture
+- **Long-lived runtime** - TCP server managing multiple deployed contracts
+- **Isolated execution** - Each function call gets a fresh VM with deep-copied storage
 - **Call stack** for function calls and returns
-- **Storage** system for runtime variables with pre-initialization support
+- **InitStorage** - Immutable initial state (policies, registries) set at deploy time
 - **Journal** for event logging with SHA-256 hashes
-- **Function execution** - Execute specific functions by name with `RunFunction()`
-- **InitStorage** - Pre-load immutable state (policies, registries) from deployed contracts
 - Built-in operations: arithmetic, comparison, logical, array access
 
 ### Supported Types
@@ -118,36 +118,100 @@ contract Synx {
 ## 🚀 Running
 
 ```bash
-# Deploy a contract (compiles and initializes)
-go run . deploy
+# Start the VVM runtime server
+go run .
 
-# Execute a specific function from a deployed contract
-go run . exec <function_name> [args...]
-
-# Example output for deploy:
-# Registry '{CreditScoreFL}' created with hash: 0xdfc2c348...
-# Agent 'CreditScoreFL' validated successfully
-# Contract deployed successfully.
+# Output:
+# VVM Runtime listening on :8332
 ```
+
+The VVM runs as a **long-lived TCP server** on port `8332`, accepting binary wire protocol messages for deploying and executing contracts.
+
+### Wire Protocol
+
+Messages use **length-prefixed JSON** format:
+
+```
+┌──────────────┬─────────────────────┐
+│ 4 bytes      │ N bytes             │
+│ (uint32 BE)  │ (JSON payload)      │
+│ length = N   │                     │
+└──────────────┴─────────────────────┘
+```
+
+#### DEPLOY - Deploy a contract
+
+```json
+{
+  "type": "DEPLOY",
+  "id": "req-1",
+  "data": {
+    "Hash": "0xabc123...",
+    "ContractName": "CreditContract",
+    "Version": "1.0.0",
+    "Owner": "0xDEF456",
+    "Source": "contract Synx { ... }"
+  }
+}
+```
+
+#### EXEC - Execute a function
+
+```json
+{
+  "type": "EXEC",
+  "id": "req-2",
+  "data": {
+    "contract_id": "0xabc123...",
+    "function": "approve",
+    "args": {
+      "model_id": "CreditScoreFL",
+      "score": 750,
+      "amount": 15000
+    }
+  }
+}
+```
+
+#### PING - Health check
+
+```json
+{ "type": "PING", "id": "req-3", "data": null }
+```
+
+---
 
 ### Execution Model
 
-The VM supports a **two-phase execution model**:
+The VM uses a **two-phase execution model** with immutable artifacts:
 
-1. **Deploy Phase** - Compiles the contract, runs initialization code (registries, agents, policies, types), and captures the initialized storage state into the `ContractArtifact`.
-
-2. **Exec Phase** - Executes a specific function by name with pre-loaded storage. Policies, registries, and types are immutable and available from the artifact.
-
-```go
-// Deploy: compile and initialize
-artifact := compiler.Artifact()
-vm := vm.NewFromArtifact(artifact)
-vm.Run() // Runs initialization
-artifact.InitStorage = vm.GetStorage() // Capture state
-
-// Exec: run specific function with initialized state
-vm.RunFunction("approve", decisionObject)
 ```
+┌─────────────────────────────────────────────┐
+│           Artifact (IMMUTABLE)              │
+│  ┌───────────────────────────────────────┐  │
+│  │  Bytecode (compiled code)             │  │
+│  │  InitStorage (initial state)          │  │
+│  │    - Policies                         │  │
+│  │    - Registries                       │  │
+│  │    - Agents                           │  │
+│  └───────────────────────────────────────┘  │
+└─────────────────────────────────────────────┘
+                    │
+         deep copy on each exec
+                    │
+        ┌───────────┼───────────┐
+        ▼           ▼           ▼
+   ┌─────────┐ ┌─────────┐ ┌─────────┐
+   │ Exec #1 │ │ Exec #2 │ │ Exec #3 │
+   │ storage │ │ storage │ │ storage │
+   │  (copy) │ │  (copy) │ │  (copy) │
+   └─────────┘ └─────────┘ └─────────┘
+   (isolated)  (isolated)  (isolated)
+```
+
+1. **Deploy Phase** - Compiles the contract, runs initialization (registries, agents, policies, types), and captures the state into an immutable `ContractArtifact`.
+
+2. **Exec Phase** - Creates a **fresh VM** with a deep copy of `InitStorage`. Each execution is isolated — no shared state between runs.
 
 ---
 
@@ -169,7 +233,7 @@ vm.RunFunction("approve", decisionObject)
 
 ```
 vvm/
-├── main.go           # Entry point (deploy/exec modes)
+├── main.go           # Entry point (TCP server on :8332)
 ├── commiter/         # Journal commit handlers
 │   └── commiter.go
 ├── lexer/            # Tokenizer
@@ -192,7 +256,8 @@ vvm/
 │   ├── stmt.go
 │   └── debug.go
 └── vm/               # Virtual machine
-    └── vm.go
+    ├── vm.go         # VM execution engine
+    └── runtime.go    # Long-lived runtime & wire protocol
 ```
 
 ---
