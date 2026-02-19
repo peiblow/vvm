@@ -7,18 +7,19 @@ import (
 )
 
 type ArgMeta struct {
-	Slot     int
-	TypeName string
+	Name     string `json:"name"`
+	Slot     int    `json:"slot"`
+	TypeName string `json:"type_name"`
 }
 
 type FunctionMeta struct {
-	Addr    int
-	Args    []int
-	ArgMeta []ArgMeta
+	Addr    int       `json:"addr"`
+	Args    []int     `json:"args"`
+	ArgMeta []ArgMeta `json:"arg_meta"`
 }
 
 type TypeMeta struct {
-	Fields map[string]string
+	Fields map[string]string `json:"fields"`
 }
 
 type Compiler struct {
@@ -45,12 +46,12 @@ func New() *Compiler {
 }
 
 type ContractArtifact struct {
-	Bytecode     []byte
-	ConstPool    []interface{}
-	Functions    map[string]FunctionMeta
-	FunctionName map[int]string
-	Types        map[string]TypeMeta
-	InitStorage  map[int]interface{}
+	Bytecode     []byte                 `json:"bytecode"`
+	ConstPool    []interface{}          `json:"const_pool"`
+	Functions    map[string]FunctionMeta `json:"functions"`
+	FunctionName map[int]string         `json:"function_name"`
+	Types        map[string]TypeMeta    `json:"types"`
+	InitStorage  map[int]interface{}    `json:"init_storage"`
 }
 
 func (c *Compiler) Artifact() *ContractArtifact {

@@ -122,6 +122,9 @@ func (vm *VM) RunFunction(funcName string, args ...interface{}) ExecutionResult 
 		vm.storage[slot] = arg
 	}
 
+	haltAddr := len(vm.compiler.Code) - 1
+	vm.callStack = append(vm.callStack, haltAddr)
+
 	vm.ip = funcMeta.Addr
 
 	return vm.execute()
@@ -586,6 +589,7 @@ func (vm *VM) execRegistry(code []byte) {
 		"owner":   owner,
 		"purpose": purpose,
 	}
+	fmt.Println("Registry stored at key:", vm.storage)
 }
 
 func (vm *VM) execRegistryGet(code []byte) {

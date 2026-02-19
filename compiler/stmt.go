@@ -129,6 +129,7 @@ func (c *Compiler) compileFuncArgs(args []ast.ArgsStmt) ([]int, []ArgMeta) {
 		}
 
 		argMeta = append(argMeta, ArgMeta{
+			Name:     argName,
 			Slot:     slot,
 			TypeName: typeName,
 		})

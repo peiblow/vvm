@@ -25,31 +25,38 @@ func NewRuntime() *Runtime {
 }
 
 type WireMessage struct {
-	Type string          `json:"type"` // DEPLOY, EXEC
-	ID   string          `json:"id"`   // Request ID for correlation
-	Data json.RawMessage `json:"data"` // Payload (depends on Type)
+	Type string
+	ID   string
+	Data json.RawMessage
 }
 
 type WireResponse struct {
-	Type    string      `json:"type"`
-	ID      string      `json:"id"`
-	Success bool        `json:"success"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Type    string
+	ID      string
+	Success bool
+	Data    interface{}
+	Error   string
 }
 
 type DeployRequest struct {
-	Hash         string
-	ContractName string
-	Version      string
-	Owner        string
-	Source       []byte
+	Hash         string `json:"hash"`
+	ContractName string `json:"contract_name"`
+	Version      string `json:"version"`
+	Owner        string `json:"owner"`
+	Source       []byte `json:"source"`
 }
 
 type ExecRequest struct {
-	ContractID string                 `json:"contract_id"`
-	Function   string                 `json:"function"`
-	Args       map[string]interface{} `json:"args"`
+	ArtifactHash     string                 `json:"contract_id"`
+	ContractArtifact json.RawMessage        `json:"contract_artifact"`
+	Function         string                 `json:"function"`
+	Args             map[string]interface{} `json:"args"`
+}
+
+type AgentInfo struct {
+	Hash    string `json:"hash"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 func (r *Runtime) HandleConnection(conn net.Conn) {
@@ -159,16 +166,20 @@ func (r *Runtime) handleDeploy(msg *WireMessage) WireResponse {
 		ID:      msg.ID,
 		Success: true,
 		Data: map[string]interface{}{
-			"contract_hash":    req.Hash,
-			"contract_version": req.Version,
-			"contract_name":    req.ContractName,
-			"functions":        getFunctionNames(artifact),
-			"agents":           getAgentsNames(artifact),
+			"contract_hash":     req.Hash,
+			"contract_version":  req.Version,
+			"contract_name":     req.ContractName,
+			"contract_owner":    req.Owner,
+			"contract_artifact": artifact,
+			"functions":         getFunctionNames(artifact),
+			"agent":             getAgents(artifact),
 		},
 	}
 }
 
 func (r *Runtime) handleExec(msg *WireMessage) WireResponse {
+	fmt.Printf("Received EXEC request with ID %s\n", msg.ID)
+
 	var req ExecRequest
 	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		return WireResponse{
@@ -179,21 +190,57 @@ func (r *Runtime) handleExec(msg *WireMessage) WireResponse {
 		}
 	}
 
-	r.mu.RLock()
-	artifact, exists := r.contracts[req.ContractID]
-	r.mu.RUnlock()
-
-	if !exists {
+	var artifact compiler.ContractArtifact
+	if err := json.Unmarshal(req.ContractArtifact, &artifact); err != nil {
 		return WireResponse{
 			Type:    "EXEC_RESPONSE",
 			ID:      msg.ID,
 			Success: false,
-			Error:   fmt.Sprintf("contract '%s' not found", req.ContractID),
+			Error:   fmt.Sprintf("invalid exec request: %v", err),
 		}
 	}
 
-	vm := NewFromArtifact(artifact)
-	result := vm.RunFunction(req.Function, req.Args)
+	// fmt.Println("Artifact Functions in Exec Handler:", artifact)
+
+	if len(artifact.Bytecode) == 0 {
+		return WireResponse{
+			Type:    "EXEC_RESPONSE",
+			ID:      msg.ID,
+			Success: false,
+			Error:   "empty bytecode",
+		}
+	}
+
+	// Unwrap named args into ordered values matching function parameter order
+	funcMeta, funcExists := artifact.Functions[req.Function]
+	if !funcExists {
+		return WireResponse{
+			Type:    "EXEC_RESPONSE",
+			ID:      msg.ID,
+			Success: false,
+			Error:   fmt.Sprintf("function '%s' not found in contract", req.Function),
+		}
+	}
+
+	var orderedArgs []interface{}
+	for _, meta := range funcMeta.ArgMeta {
+		val, exists := req.Args[meta.Name]
+		if !exists {
+			fmt.Println("Provided args:", req.Args)
+			fmt.Printf("Missing argument '%s' for function '%s'\n", meta.Name, req.Function)
+			return WireResponse{
+				Type:    "EXEC_RESPONSE",
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("missing argument '%s' for function '%s'", meta.Name, req.Function),
+			}
+		}
+
+		orderedArgs = append(orderedArgs, val)
+	}
+
+	vm := NewFromArtifact(&artifact)
+	result := vm.RunFunction(req.Function, orderedArgs...)
 
 	if !result.Success {
 		return WireResponse{
@@ -209,7 +256,10 @@ func (r *Runtime) handleExec(msg *WireMessage) WireResponse {
 		ID:      msg.ID,
 		Success: true,
 		Data: map[string]interface{}{
-			"journal": result.Journal,
+			"artifact_hash": req.ArtifactHash,
+			"function":      req.Function,
+			"journal":       result.Journal,
+			"exec_price":    0,
 		},
 	}
 }
@@ -229,6 +279,24 @@ func getFunctionNames(artifact *compiler.ContractArtifact) []string {
 	return names
 }
 
-func getAgentsNames(artifact *compiler.ContractArtifact) []string {
-	return []string{"agent1", "agent2"}
+func getAgents(artifact *compiler.ContractArtifact) *AgentInfo {
+	agent := artifact.InitStorage[0]
+	if agent == nil {
+		fmt.Println("No agent info found in artifact storage")
+	}
+
+	agentMap, ok := agent.(map[string]interface{})
+	if !ok {
+		fmt.Println("Agent info has unexpected format:", agent)
+	}
+
+	hash := agentMap["hash"].(string)
+	name := agentMap["name"].(string)
+	version := agentMap["version"].(string)
+
+	return &AgentInfo{
+		Hash:    hash,
+		Name:    name,
+		Version: version,
+	}
 }
