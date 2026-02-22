@@ -17,6 +17,7 @@ type VM struct {
 	storage   map[int]interface{}
 	memory    map[int]interface{}
 	ip        int
+	errors    []error
 	journal   []JournalEvent
 }
 
@@ -127,7 +128,19 @@ func (vm *VM) RunFunction(funcName string, args ...interface{}) ExecutionResult 
 
 	vm.ip = funcMeta.Addr
 
-	return vm.execute()
+	vmResult := vm.execute()
+
+	if len(vm.errors) > 0 {
+		return ExecutionResult{
+			Success: false,
+			Journal: vm.journal,
+			Error:   fmt.Errorf("execution aborted due to previous errors: %v", vm.errors),
+		}
+	} else {
+		return vmResult
+	}
+
+	// return vm.execute()
 }
 
 func (vm *VM) execute() ExecutionResult {
@@ -136,6 +149,15 @@ func (vm *VM) execute() ExecutionResult {
 	for {
 		op := code[vm.ip]
 		vm.ip++
+
+		if len(vm.errors) > 0 {
+			fmt.Printf("Execution halted due to errors: %v\n", vm.errors)
+			return ExecutionResult{
+				Success: false,
+				Journal: vm.journal,
+				Error:   fmt.Errorf("execution aborted due to previous errors: %v", vm.errors),
+			}
+		}
 
 		switch op {
 		case compiler.OP_CONST:
@@ -732,10 +754,8 @@ func extractValue(v interface{}) string {
 	case float64:
 		return fmt.Sprintf("%.0f", val)
 	default:
-		// Handle AST expression types
 		rv := reflect.ValueOf(v)
 		if rv.Kind() == reflect.Struct {
-			// Try to get Value field (for StringExpr, NumberExpr, SymbolExpr)
 			valueField := rv.FieldByName("Value")
 			if valueField.IsValid() {
 				return fmt.Sprintf("%v", valueField.Interface())
@@ -755,11 +775,12 @@ func (vm *VM) execRequire() {
 	condition := vm.pop("OP_REQUIRE")
 	condInt, ok := condition.(int)
 	if !ok || condInt == 0 {
-		panic("Require condition failed")
+		fmt.Printf("Require condition failed: %v\n", condition)
+		vm.errors = append(vm.errors, fmt.Errorf("require condition failed: %v", condition))
 	}
 }
 
 func (vm *VM) execErr() {
 	message := vm.pop("OP_ERR")
-	panic(fmt.Sprintf("Error raised: %v", message))
+	vm.errors = append(vm.errors, fmt.Errorf("execution error: %v", message))
 }

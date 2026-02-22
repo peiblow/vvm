@@ -200,8 +200,6 @@ func (r *Runtime) handleExec(msg *WireMessage) WireResponse {
 		}
 	}
 
-	// fmt.Println("Artifact Functions in Exec Handler:", artifact)
-
 	if len(artifact.Bytecode) == 0 {
 		return WireResponse{
 			Type:    "EXEC_RESPONSE",
