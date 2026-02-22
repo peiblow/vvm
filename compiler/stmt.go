@@ -26,8 +26,6 @@ func (c *Compiler) compileStmt(stmt ast.Stmt) {
 		c.compileWhile(s)
 	case ast.RequireStmt:
 		c.compileRequire(s)
-	case ast.RegistryDeclareStmt:
-		c.compileRegistryDeclare(s)
 	case ast.AgentStmt:
 		c.compileAgentStmt(s)
 	case ast.PolicyStmt:
@@ -236,10 +234,8 @@ func (c *Compiler) compileRequire(s ast.RequireStmt) {
 	c.patchJump(jmpPastErrorPos+1, endPos)
 }
 
-func (c *Compiler) compileRegistryDeclare(s ast.RegistryDeclareStmt) {
-	kindIdx := c.addConst(s.Kind)
-	c.emit(OP_CONST, kindIdx)
-	nameIdx := c.addConst(s.Name)
+func (c *Compiler) compileRegistryAgentDeclare(s ast.AgentStmt) {
+	nameIdx := c.addConst(s.Identifier)
 	c.emit(OP_CONST, nameIdx)
 	versionIdx := c.addConst(s.Version)
 	c.emit(OP_CONST, versionIdx)
@@ -249,8 +245,7 @@ func (c *Compiler) compileRegistryDeclare(s ast.RegistryDeclareStmt) {
 	c.emit(OP_CONST, purposeIdx)
 
 	c.emit(
-		OP_REGISTRY_DECLARE,
-		byte(kindIdx),
+		OP_AGENT_DECLARE,
 		byte(nameIdx),
 		byte(versionIdx),
 		byte(ownerIdx),
@@ -259,29 +254,25 @@ func (c *Compiler) compileRegistryDeclare(s ast.RegistryDeclareStmt) {
 }
 
 func (c *Compiler) compileAgentStmt(s ast.AgentStmt) {
+	c.compileRegistryAgentDeclare(s)
+
 	agentName := s.Identifier.(ast.SymbolExpr).Value
 	c.allocSlot(agentName)
 
-	// Get registry identifier
 	identifierIdx := c.findConst(s.Identifier)
 	if identifierIdx == 255 {
 		identifierIdx = c.addConst(s.Identifier)
 	}
 
-	// Get the registry object
 	c.emit(OP_CONST, identifierIdx)
-	c.emit(OP_REGISTRY_GET, byte(identifierIdx))
+	c.emit(OP_AGENT_GET, byte(identifierIdx))
 
-	// Push agent hash, version, owner for validation
-	hashIdx := c.addConst(s.Hash)
 	versionIdx := c.addConst(s.Version)
 	ownerIdx := c.addConst(s.Owner)
 
-	c.emit(OP_CONST, hashIdx)
 	c.emit(OP_CONST, versionIdx)
 	c.emit(OP_CONST, ownerIdx)
 
-	// Validate agent against registry
 	c.emit(OP_AGENT_VALIDATE)
 
 	c.emit(OP_STORE, byte(c.Symbols[agentName]))

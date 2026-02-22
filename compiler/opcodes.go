@@ -50,9 +50,9 @@ const (
 	OP_DELETE = 0x1E // remove valor da storage
 
 	// Registry (persistente)
-	OP_REGISTRY_DECLARE = 0x1C // armazena valor na memória
-	OP_REGISTRY_GET     = 0x1D // carrega valor da memória
-	OP_AGENT_VALIDATE   = 0x1F // validates agent against registry
+	OP_AGENT_DECLARE  = 0x1C // armazena valor na memória
+	OP_AGENT_GET      = 0x1D // carrega valor da memória
+	OP_AGENT_VALIDATE = 0x1F // validates agent against registry
 
 	OP_POLICY_DECLARE = 0x4F // declara política
 	OP_TYPE_DECLARE   = 0x5F // declara tipo
@@ -73,46 +73,46 @@ const (
 
 // OpcodeNames mapeia opcodes para seus nomes (útil para debug)
 var OpcodeNames = map[byte]string{
-	OP_HALT:             "HALT",
-	OP_CONST:            "CONST",
-	OP_PUSH:             "PUSH",
-	OP_POP:              "POP",
-	OP_DUP:              "DUP",
-	OP_SWAP:             "SWAP",
-	OP_ADD:              "ADD",
-	OP_SUB:              "SUB",
-	OP_MUL:              "MUL",
-	OP_DIV:              "DIV",
-	OP_GT:               "GT",
-	OP_GT_EQ:            "GT_EQ",
-	OP_LT:               "LT",
-	OP_LT_EQ:            "LT_EQ",
-	OP_EQ:               "EQ",
-	OP_DIFF:             "DIFF",
-	OP_PLUS_EQ:          "PLUS_EQ",
-	OP_PRINT:            "PRINT",
-	OP_NOP:              "NOP",
-	OP_JMP:              "JMP",
-	OP_JMP_IF:           "JMP_IF",
-	OP_CALL:             "CALL",
-	OP_RET:              "RET",
-	OP_ACCESS:           "ACCESS",
-	OP_LENGTH:           "LENGTH",
-	OP_NULL:             "NULL",
-	OP_STORE:            "STORE",
-	OP_SLOAD:            "SLOAD",
-	OP_DELETE:           "DELETE",
-	OP_REWARD:           "REWARD",
-	OP_EMIT:             "EMIT",
-	OP_TRANSFER:         "TRANSFER",
-	OP_BALANCE_OF:       "BALANCE_OF",
-	OP_REQUIRE:          "REQUIRE",
-	OP_REGISTRY_DECLARE: "REGISTRY_DECLARE",
-	OP_REGISTRY_GET:     "REGISTRY_GET",
-	OP_ERR:              "ERR",
-	OP_PUSH_OBJECT:      "PUSH_OBJECT",
-	OP_SET_PROPERTY:     "SET_PROPERTY",
-	OP_GET_PROPERTY:     "GET_PROPERTY",
+	OP_HALT:          "HALT",
+	OP_CONST:         "CONST",
+	OP_PUSH:          "PUSH",
+	OP_POP:           "POP",
+	OP_DUP:           "DUP",
+	OP_SWAP:          "SWAP",
+	OP_ADD:           "ADD",
+	OP_SUB:           "SUB",
+	OP_MUL:           "MUL",
+	OP_DIV:           "DIV",
+	OP_GT:            "GT",
+	OP_GT_EQ:         "GT_EQ",
+	OP_LT:            "LT",
+	OP_LT_EQ:         "LT_EQ",
+	OP_EQ:            "EQ",
+	OP_DIFF:          "DIFF",
+	OP_PLUS_EQ:       "PLUS_EQ",
+	OP_PRINT:         "PRINT",
+	OP_NOP:           "NOP",
+	OP_JMP:           "JMP",
+	OP_JMP_IF:        "JMP_IF",
+	OP_CALL:          "CALL",
+	OP_RET:           "RET",
+	OP_ACCESS:        "ACCESS",
+	OP_LENGTH:        "LENGTH",
+	OP_NULL:          "NULL",
+	OP_STORE:         "STORE",
+	OP_SLOAD:         "SLOAD",
+	OP_DELETE:        "DELETE",
+	OP_REWARD:        "REWARD",
+	OP_EMIT:          "EMIT",
+	OP_TRANSFER:      "TRANSFER",
+	OP_BALANCE_OF:    "BALANCE_OF",
+	OP_REQUIRE:       "REQUIRE",
+	OP_AGENT_DECLARE: "REGISTRY_DECLARE",
+	OP_AGENT_GET:     "REGISTRY_GET",
+	OP_ERR:           "ERR",
+	OP_PUSH_OBJECT:   "PUSH_OBJECT",
+	OP_SET_PROPERTY:  "SET_PROPERTY",
+	OP_GET_PROPERTY:  "GET_PROPERTY",
 }
 
 // HasOperand retorna true se o opcode requer um operando

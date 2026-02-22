@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/peiblow/vvm/compiler"
 )
@@ -214,10 +215,10 @@ func (vm *VM) execute() ExecutionResult {
 			vm.execStore(code)
 		case compiler.OP_SLOAD:
 			vm.execSload(code)
-		case compiler.OP_REGISTRY_DECLARE:
-			vm.execRegistry(code)
-		case compiler.OP_REGISTRY_GET:
-			vm.execRegistryGet(code)
+		case compiler.OP_AGENT_DECLARE:
+			vm.execAgentDeclare()
+		case compiler.OP_AGENT_GET:
+			vm.execAgentGet(code)
 		case compiler.OP_AGENT_VALIDATE:
 			vm.execAgentValidate()
 		case compiler.OP_POLICY_DECLARE:
@@ -579,42 +580,38 @@ func (vm *VM) execSload(code []byte) {
 	vm.push(val)
 }
 
-func (vm *VM) execRegistry(code []byte) {
-	purpose := vm.pop("OP_REGISTRY_DECLARE")
+func (vm *VM) execAgentDeclare() {
+	purpose := vm.pop("OP_AGENT_DECLARE")
 	vm.ip++
 
-	owner := vm.pop("OP_REGISTRY_DECLARE")
+	owner := vm.pop("OP_AGENT_DECLARE")
 	vm.ip++
 
-	version := vm.pop("OP_REGISTRY_DECLARE")
+	version := vm.pop("OP_AGENT_DECLARE")
 	vm.ip++
 
-	name := vm.pop("OP_REGISTRY_DECLARE")
-	vm.ip++
-
-	kind := vm.pop("OP_REGISTRY_DECLARE")
+	name := vm.pop("OP_AGENT_DECLARE")
 	vm.ip++
 
 	// Generate hash from registry data
-	hashInput := fmt.Sprintf("%v:%v:%v:%v:%v", kind, name, version, owner, purpose)
+	hashInput := fmt.Sprintf("%v:%v:%v:%v:%v", name, version, owner, purpose, time.Now().UnixMilli())
 	hashBytes := sha256.Sum256([]byte(hashInput))
 	hash := "0x" + hex.EncodeToString(hashBytes[:])
 
-	fmt.Printf("Registry '%v' created with hash: %s\n", name, hash)
+	fmt.Printf("Agent '%v' created with hash: %s\n", name, hash)
 
 	key := len(vm.storage) + 1
 	vm.storage[key] = map[string]interface{}{
 		"hash":    hash,
-		"kind":    kind,
 		"name":    name,
 		"version": version,
 		"owner":   owner,
 		"purpose": purpose,
 	}
-	fmt.Println("Registry stored at key:", vm.storage)
+	fmt.Println("Agent stored at key:", vm.storage)
 }
 
-func (vm *VM) execRegistryGet(code []byte) {
+func (vm *VM) execAgentGet(code []byte) {
 	identifierIdx := int(code[vm.ip])
 	vm.ip++
 
@@ -649,20 +646,12 @@ func (vm *VM) execAgentValidate() {
 	// Pop agent data from stack (in reverse order)
 	agentOwner := vm.pop("AGENT_VALIDATE")
 	agentVersion := vm.pop("AGENT_VALIDATE")
-	agentHash := vm.pop("AGENT_VALIDATE")
 	registry := vm.pop("AGENT_VALIDATE").(map[string]interface{})
 
 	// Extract actual values
-	agentHashStr := extractValue(agentHash)
 	agentOwnerStr := extractValue(agentOwner)
 	agentVersionStr := extractValue(agentVersion)
 	agentNameStr := extractValue(registry["name"])
-
-	// Validate hash
-	registryHash := extractValue(registry["hash"])
-	if registryHash != agentHashStr {
-		panic(fmt.Sprintf("Agent validation failed: Hash mismatch for '%v'\n  Expected: %s\n  Got: %s", agentNameStr, registryHash, agentHashStr))
-	}
 
 	// Validate version
 	registryVersion := extractValue(registry["version"])
@@ -675,6 +664,8 @@ func (vm *VM) execAgentValidate() {
 	if registryOwner != agentOwnerStr {
 		panic(fmt.Sprintf("Agent validation failed: Owner mismatch for '%v'\n  Expected: %s\n  Got: %s", agentNameStr, registryOwner, agentOwnerStr))
 	}
+
+	agentHashStr := extractValue(registry["hash"])
 
 	fmt.Printf("Agent '%v' validated successfully (hash: %s..., owner: %s, version: %v)\n", agentNameStr, agentHashStr[:18], agentOwnerStr, agentVersionStr)
 
