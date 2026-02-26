@@ -764,10 +764,16 @@ func (vm *VM) execDelete(code []byte) {
 
 func (vm *VM) execRequire() {
 	condition := vm.pop("OP_REQUIRE")
+
+	message := vm.pop("OP_REQUIRE")
+	messageStr, ok := message.(string)
+	if !ok {
+		messageStr = fmt.Sprintf("%v", message)
+	}
+
 	condInt, ok := condition.(int)
 	if !ok || condInt == 0 {
-		fmt.Printf("Require condition failed: %v\n", condition)
-		vm.errors = append(vm.errors, fmt.Errorf("require condition failed: %v", condition))
+		vm.errors = append(vm.errors, fmt.Errorf("require failed: %s", messageStr))
 	}
 }
 

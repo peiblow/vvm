@@ -14,15 +14,12 @@ const (
 	STRING
 	IDENTIFIER
 	CONTRACT
-
-	REGISTRY
 	AGENT
 	POLICY
 	TYPE
 	ACTION
 	EMIT
 	REQUIRE
-
 	// Grouping & Braces
 	OPEN_BRACKET
 	CLOSE_BRACKET
@@ -30,23 +27,19 @@ const (
 	CLOSE_CURLY
 	OPEN_PAREN
 	CLOSE_PAREN
-
-	// Equivilance
+	// Equivalence
 	ASSIGNMENT
 	EQUALS
 	NOT_EQUALS
 	NOT
-
 	// Conditional
 	LESS
 	LESS_EQUALS
 	GREATER
 	GREATER_EQUALS
-
 	// Logical
 	OR
 	AND
-
 	// Symbols
 	DOT
 	DOT_DOT
@@ -55,21 +48,18 @@ const (
 	COLON
 	QUESTION
 	COMMA
-
 	// Shorthand
 	PLUS_PLUS
 	MINUS_MINUS
 	PLUS_EQUALS
 	MINUS_EQUALS
 	NULLISH_ASSIGNMENT // ??=
-
-	//Maths
+	// Maths
 	PLUS
 	DASH
 	SLASH
 	STAR
 	PERCENT
-
 	// Reserved Keywords
 	LET
 	CONST
@@ -81,30 +71,38 @@ const (
 	FOR
 	RETURN
 	THIS
-
 	// Misc
 	NUM_TOKENS
 )
 
+// BUG FIX: `true`, `false`, and `null` were defined as TokenTypes but were
+// missing from reserved_lu, so they were being emitted as IDENTIFIER tokens
+// instead of their correct types.
 var reserved_lu map[string]TokenType = map[string]TokenType{
-	"fn":       FN,
-	"if":       IF,
-	"else":     ELSE,
-	"foreach":  FOREACH,
-	"while":    WHILE,
-	"for":      FOR,
-	"const":    CONST,
-	"let":      LET,
+	// Control flow
+	"fn":      FN,
+	"if":      IF,
+	"else":    ELSE,
+	"foreach": FOREACH,
+	"while":   WHILE,
+	"for":     FOR,
+	"return":  RETURN,
+	// Variables
+	"const": CONST,
+	"let":   LET,
+	"this":  THIS,
+	// Synx-specific
 	"contract": CONTRACT,
-	"return":   RETURN,
-	"registry": REGISTRY,
 	"agent":    AGENT,
 	"policy":   POLICY,
 	"type":     TYPE,
 	"action":   ACTION,
 	"emit":     EMIT,
-	"this":     THIS,
 	"require":  REQUIRE,
+	// Literals — were missing, caused `true`/`false`/`null` to tokenize as IDENTIFIER
+	"true":  TRUE,
+	"false": FALSE,
+	"null":  NULL,
 }
 
 type Token struct {
@@ -135,6 +133,8 @@ func TokenTypeString(tp TokenType) string {
 		return "null"
 	case NUMBER:
 		return "number"
+	case HEX_NUMBER:
+		return "hex_number"
 	case STRING:
 		return "string"
 	case TRUE:
@@ -145,6 +145,18 @@ func TokenTypeString(tp TokenType) string {
 		return "identifier"
 	case CONTRACT:
 		return "contract"
+	case AGENT:
+		return "agent"
+	case POLICY:
+		return "policy"
+	case TYPE:
+		return "type"
+	case ACTION:
+		return "action"
+	case EMIT:
+		return "emit"
+	case REQUIRE:
+		return "require"
 	case OPEN_BRACKET:
 		return "open_bracket"
 	case CLOSE_BRACKET:
@@ -181,6 +193,10 @@ func TokenTypeString(tp TokenType) string {
 		return "dot"
 	case DOT_DOT:
 		return "dot_dot"
+	case SEMI_COLON:
+		return "semi_colon"
+	case BREAK_LINE:
+		return "break_line"
 	case COLON:
 		return "colon"
 	case QUESTION:
@@ -195,6 +211,8 @@ func TokenTypeString(tp TokenType) string {
 		return "plus_equals"
 	case MINUS_EQUALS:
 		return "minus_equals"
+	case NULLISH_ASSIGNMENT:
+		return "nullish_assignment"
 	case PLUS:
 		return "plus"
 	case DASH:
@@ -217,8 +235,14 @@ func TokenTypeString(tp TokenType) string {
 		return "for"
 	case WHILE:
 		return "while"
-	case REGISTRY:
-		return "registry"
+	case LET:
+		return "let"
+	case CONST:
+		return "const"
+	case RETURN:
+		return "return"
+	case THIS:
+		return "this"
 	default:
 		return fmt.Sprintf("unknown(%d)", tp)
 	}
