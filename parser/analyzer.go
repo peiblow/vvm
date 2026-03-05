@@ -14,10 +14,8 @@ var builtinTypes = map[string]bool{
 	"String":  true,
 	"Address": true,
 	"UInt":    true,
-	"Int":     true,
 	"Bool":    true,
-	"bool":    true,
-	"void":    true,
+	"Void":    true,
 	"Event":   true,
 }
 

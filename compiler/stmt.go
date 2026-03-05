@@ -50,6 +50,20 @@ func (c *Compiler) compileVarDecl(s ast.VarDeclStmt) {
 	if s.AssignedValue == nil {
 		return
 	}
+
+	if c.Symbols[s.Identifier] != 0 {
+		erroMsg := fmt.Sprintf("Variable %s already declared", s.Identifier)
+		errIdx := c.addConst(erroMsg)
+		c.emit(OP_CONST, errIdx)
+		c.emit(OP_ERR)
+	}
+
+	// Save if var is let or const
+	if s.Constant {
+		// we are using /CONST suffix to differentiate between let and const in the symbol table
+		c.Symbols[s.Identifier+"/CONST"] = c.Symbols[s.Identifier]
+	}
+
 	c.compileExpr(s.AssignedValue)
 	slot := c.allocSlot(s.Identifier)
 	c.emit(OP_STORE, byte(slot))

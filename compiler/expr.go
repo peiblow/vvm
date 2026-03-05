@@ -116,12 +116,22 @@ func (c *Compiler) convertObjectToMap(obj ast.ObjectAssignmentExpr) map[string]i
 func (c *Compiler) compileAssignment(e ast.AssignmentExpr) {
 	switch left := e.Left.(type) {
 	case ast.SymbolExpr:
-		c.compileSymbolAssignment(left.Value, e.Right)
+		if _, exists := c.Symbols[left.Value+"/CONST"]; exists {
+			erroMsg := fmt.Sprintf("Variable %s is a constant and cannot be reassigned", left.Value)
+			errIdx := c.addConst(erroMsg)
+			c.emit(OP_CONST, errIdx)
+			c.emit(OP_ERR)
+		} else {
+			c.compileSymbolAssignment(left.Value, e.Right)
+		}
 	case ast.ExpressionStmt:
 		if sym, ok := left.Expression.(ast.SymbolExpr); ok {
 			c.compileSymbolAssignment(sym.Value, e.Right)
 		} else {
-			panic("Esperava SymbolExpr em ExpressionStmt para atribuição")
+			errMsg := "Invalid left-hand side in assignment"
+			errIdx := c.addConst(errMsg)
+			c.emit(OP_CONST, errIdx)
+			c.emit(OP_ERR)
 		}
 	case ast.MemberExpr:
 		c.compileMemberAssignment(left, e.Right)
@@ -143,7 +153,6 @@ func (c *Compiler) compileSymbolAssignment(name string, right ast.Expr) {
 }
 
 func (c *Compiler) compileMemberAssignment(member ast.MemberExpr, right ast.Expr) {
-	// Carrega o objeto
 	if _, ok := member.Object.(ast.ThisExpr); ok {
 		c.emit(OP_SLOAD, 0)
 	} else if sym, ok := member.Object.(ast.SymbolExpr); ok {
