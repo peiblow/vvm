@@ -231,7 +231,9 @@ func (vm *VM) execute() ExecutionResult {
 		case compiler.OP_EMIT:
 			vm.execEmitEvent()
 		case compiler.OP_GET_ENV:
-			vm.execGetEnvStmt(compiler.OP_GET_ENV)
+			vm.execGetEnv()
+		case compiler.OP_NONCE:
+			vm.execNonce()
 		case compiler.OP_ERR:
 			vm.execErr()
 		case compiler.OP_DELETE:
@@ -689,7 +691,7 @@ func (vm *VM) execTypeDeclare(code []byte) {
 	vm.push(typeObj)
 }
 
-func (vm *VM) execGetEnvStmt(op byte) {
+func (vm *VM) execGetEnv() {
 	vm.ip++
 	variableName := vm.pop("OP_GET_ENV")
 	variableNameStr := extractValue(variableName)
@@ -701,6 +703,24 @@ func (vm *VM) execGetEnvStmt(op byte) {
 
 	fmt.Printf("Environment variable '%s' accessed with value: %s\n", variableNameStr, value)
 	vm.push(value)
+}
+
+func (vm *VM) execNonce() {
+	sizeVal := vm.pop("OP_NONCE")
+	fmt.Printf("Generating nonce with size: %v\n", sizeVal)
+	size, ok := sizeVal.(int)
+	if !ok {
+		panic(fmt.Sprintf("OP_NONCE expected int size, got %T", sizeVal))
+	}
+
+	nonceBytes := make([]byte, size)
+	for i := 0; i < size; i++ {
+		nonceBytes[i] = byte(time.Now().UnixNano() >> (i * 8))
+	}
+
+	nonceHex := "0x" + hex.EncodeToString(nonceBytes)
+	fmt.Printf("Generated nonce of size %d: %s\n", size, nonceHex)
+	vm.push(nonceHex)
 }
 
 func (vm *VM) execEmitEvent() {

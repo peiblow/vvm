@@ -34,8 +34,6 @@ func (c *Compiler) compileStmt(stmt ast.Stmt) {
 		c.compileTypeDeclareStmt(s)
 	case ast.EmitStmt:
 		c.compileEmitStmt(s)
-	case ast.GetEnvStmt:
-		c.compileGetEnvStmt(s)
 
 	default:
 		fmt.Printf("Unrecognized statement type: %T\n", s)
@@ -390,16 +388,4 @@ func (c *Compiler) compileEmitStmt(s ast.EmitStmt) {
 	}
 
 	c.emit(OP_EMIT, byte(eventNameIdx))
-}
-
-func (c *Compiler) compileGetEnvStmt(s ast.GetEnvStmt) {
-	variableNameIdx := c.addConst(s.VariableName)
-	c.emit(OP_CONST, variableNameIdx)
-	c.emit(OP_GET_ENV, byte(variableNameIdx))
-}
-
-func (c *Compiler) compileGetEnvExpr(e ast.GetEnvExpr) {
-	c.compileExpr(e.VariableName)
-	idx := c.addConst(e.VariableName)
-	c.emit(OP_GET_ENV, byte(idx))
 }

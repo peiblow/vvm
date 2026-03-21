@@ -85,6 +85,17 @@ func parse_get_env_expr(p *parser) ast.Expr {
 	}
 }
 
+func parse_nonce_expr(p *parser) ast.Expr {
+	p.expect(lexer.NONCE)
+	p.expect(lexer.OPEN_PAREN)
+	nonceSize := parse_expr(p, defalt_bp)
+	p.expect(lexer.CLOSE_PAREN)
+
+	return ast.NonceExpr{
+		Size: nonceSize,
+	}
+}
+
 func parse_incdec_expr(p *parser, left ast.Expr, bp binding_power) ast.Expr {
 	op := p.advance()
 	return ast.IncDecExpr{

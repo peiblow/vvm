@@ -38,6 +38,10 @@ func (c *Compiler) compileExpr(expr ast.Expr) {
 		c.emit(OP_NULL)
 	case ast.GetEnvExpr:
 		c.compileGetEnvExpr(e)
+	case ast.NonceExpr:
+		c.compileNonceExpr(e)
+	default:
+		fmt.Printf("Unrecognized expression type: %T\n", e)
 	}
 }
 
@@ -304,4 +308,15 @@ func (c *Compiler) compileMember(e ast.MemberExpr) {
 	}
 
 	c.emit(OP_GET_PROPERTY)
+}
+
+func (c *Compiler) compileGetEnvExpr(e ast.GetEnvExpr) {
+	c.compileExpr(e.VariableName)
+	idx := c.addConst(e.VariableName)
+	c.emit(OP_GET_ENV, byte(idx))
+}
+
+func (c *Compiler) compileNonceExpr(e ast.NonceExpr) {
+	c.compileExpr(e.Size)
+	c.emit(OP_NONCE)
 }

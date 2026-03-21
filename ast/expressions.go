@@ -108,3 +108,9 @@ type GetEnvExpr struct {
 }
 
 func (n GetEnvExpr) expr() {}
+
+type NonceExpr struct {
+	Size Expr
+}
+
+func (n NonceExpr) expr() {}
