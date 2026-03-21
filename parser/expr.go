@@ -96,6 +96,20 @@ func parse_nonce_expr(p *parser) ast.Expr {
 	}
 }
 
+func parse_hash_expr(p *parser) ast.Expr {
+	p.expect(lexer.HASH)
+	p.expect(lexer.OPEN_PAREN)
+	hashType := parse_expr(p, defalt_bp)
+	p.expect(lexer.COMMA)
+	data := parse_expr(p, defalt_bp)
+	p.expect(lexer.CLOSE_PAREN)
+
+	return ast.HashExpr{
+		HashType: hashType,
+		Data:     data,
+	}
+}
+
 func parse_incdec_expr(p *parser, left ast.Expr, bp binding_power) ast.Expr {
 	op := p.advance()
 	return ast.IncDecExpr{

@@ -86,6 +86,7 @@ func createTokenLookups() {
 	nud(lexer.NULL, parse_null_expr)
 	nud(lexer.GET_ENV, parse_get_env_expr)
 	nud(lexer.NONCE, parse_nonce_expr)
+	nud(lexer.HASH, parse_hash_expr)
 
 	stmt(lexer.CONTRACT, parse_contract_decl)
 	stmt(lexer.LET, parse_var_decl)

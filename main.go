@@ -57,7 +57,15 @@ func main() {
 				ArtifactHash:     "mockhash",
 				ContractArtifact: json.RawMessage(artifactBytes),
 				Function:         "pow",
-				Args:             map[string]interface{}{},
+				Args: map[string]interface{}{
+					"input": map[string]interface{}{
+						"commitment_id": "mock_commitment_id",
+						"tx_hash":       "mock_tx_hash",
+						"amount":        1000,
+						"timestamp":     1234567890,
+						"uniqueNonce":   "mock_unique_nonce",
+					},
+				},
 			}
 			execMsg := vm.WireMessage{
 				Type: "EXEC",
@@ -68,8 +76,6 @@ func main() {
 				}(),
 			}
 			execRes := runtime.HandleExec(&execMsg)
-
-			// print exec wireResponse
 			fmt.Printf("EXEC response: %+v\n", execRes)
 		}()
 

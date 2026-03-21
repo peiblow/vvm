@@ -40,6 +40,8 @@ func (c *Compiler) compileExpr(expr ast.Expr) {
 		c.compileGetEnvExpr(e)
 	case ast.NonceExpr:
 		c.compileNonceExpr(e)
+	case ast.HashExpr:
+		c.compileHashExpr(e)
 	default:
 		fmt.Printf("Unrecognized expression type: %T\n", e)
 	}
@@ -319,4 +321,10 @@ func (c *Compiler) compileGetEnvExpr(e ast.GetEnvExpr) {
 func (c *Compiler) compileNonceExpr(e ast.NonceExpr) {
 	c.compileExpr(e.Size)
 	c.emit(OP_NONCE)
+}
+
+func (c *Compiler) compileHashExpr(e ast.HashExpr) {
+	c.compileExpr(e.HashType)
+	c.compileExpr(e.Data)
+	c.emit(OP_HASH)
 }

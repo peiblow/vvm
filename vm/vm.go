@@ -234,6 +234,8 @@ func (vm *VM) execute() ExecutionResult {
 			vm.execGetEnv()
 		case compiler.OP_NONCE:
 			vm.execNonce()
+		case compiler.OP_HASH:
+			vm.execHash()
 		case compiler.OP_ERR:
 			vm.execErr()
 		case compiler.OP_DELETE:
@@ -707,7 +709,6 @@ func (vm *VM) execGetEnv() {
 
 func (vm *VM) execNonce() {
 	sizeVal := vm.pop("OP_NONCE")
-	fmt.Printf("Generating nonce with size: %v\n", sizeVal)
 	size, ok := sizeVal.(int)
 	if !ok {
 		panic(fmt.Sprintf("OP_NONCE expected int size, got %T", sizeVal))
@@ -721,6 +722,27 @@ func (vm *VM) execNonce() {
 	nonceHex := "0x" + hex.EncodeToString(nonceBytes)
 	fmt.Printf("Generated nonce of size %d: %s\n", size, nonceHex)
 	vm.push(nonceHex)
+}
+
+func (vm *VM) execHash() {
+	dataVal := vm.pop("OP_HASH")
+	hashTypeVal := vm.pop("OP_HASH")
+
+	hashTypeStr := extractValue(hashTypeVal)
+	dataStr := extractValue(dataVal)
+
+	var hashBytes []byte
+	switch hashTypeStr {
+	case "SHA256":
+		sum := sha256.Sum256([]byte(dataStr))
+		hashBytes = sum[:]
+	default:
+		panic(fmt.Sprintf("Unsupported hash type: %s", hashTypeStr))
+	}
+
+	hashHex := "0x" + hex.EncodeToString(hashBytes)
+	fmt.Printf("Hashed data using %s: %s\n", hashTypeStr, hashHex)
+	vm.push(hashHex)
 }
 
 func (vm *VM) execEmitEvent() {
