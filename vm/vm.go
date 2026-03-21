@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -229,16 +230,14 @@ func (vm *VM) execute() ExecutionResult {
 			vm.execRequire()
 		case compiler.OP_EMIT:
 			vm.execEmitEvent()
+		case compiler.OP_GET_ENV:
+			vm.execGetEnvStmt(compiler.OP_GET_ENV)
 		case compiler.OP_ERR:
 			vm.execErr()
 		case compiler.OP_DELETE:
 			vm.execDelete(code)
 		case compiler.OP_PUSH_OBJECT:
 			vm.push(make(map[string]interface{}))
-		case compiler.OP_TRANSFER:
-			fmt.Println("Transfer has been made :D")
-		case compiler.OP_BALANCE_OF:
-			fmt.Println("BalanceOf has been made :D")
 		case compiler.OP_HALT:
 			return ExecutionResult{
 				Success: true,
@@ -643,12 +642,10 @@ func (vm *VM) execAgentGet(code []byte) {
 }
 
 func (vm *VM) execAgentValidate() {
-	// Pop agent data from stack (in reverse order)
 	agentOwner := vm.pop("AGENT_VALIDATE")
 	agentVersion := vm.pop("AGENT_VALIDATE")
 	registry := vm.pop("AGENT_VALIDATE").(map[string]interface{})
 
-	// Extract actual values
 	agentOwnerStr := extractValue(agentOwner)
 	agentVersionStr := extractValue(agentVersion)
 	agentNameStr := extractValue(registry["name"])
@@ -668,8 +665,6 @@ func (vm *VM) execAgentValidate() {
 	agentHashStr := extractValue(registry["hash"])
 
 	fmt.Printf("Agent '%v' validated successfully (hash: %s..., owner: %s, version: %v)\n", agentNameStr, agentHashStr[:18], agentOwnerStr, agentVersionStr)
-
-	// Push validated agent data for storage
 	agentData := map[string]interface{}{
 		"name":    agentNameStr,
 		"hash":    agentHashStr,
@@ -680,42 +675,39 @@ func (vm *VM) execAgentValidate() {
 }
 
 func (vm *VM) execPolicyDeclare(code []byte) {
-	// Skip identifier index (we don't need it at runtime)
 	vm.ip++
 
-	// Pop the policy object from the stack (already set up by OP_SET_PROPERTY operations)
 	policyObj := vm.pop("OP_POLICY_DECLARE")
-
-	// Pop the identifier const (not needed at runtime)
 	vm.pop("OP_POLICY_DECLARE")
-
-	// Push the policy object back on stack for OP_STORE
 	vm.push(policyObj)
 }
 
 func (vm *VM) execTypeDeclare(code []byte) {
-	// Skip identifier index (we don't need it at runtime)
 	vm.ip++
-
-	// Pop the type object from the stack (already set up by OP_SET_PROPERTY operations)
 	typeObj := vm.pop("OP_TYPE_DECLARE")
-
-	// Pop the identifier const (not needed at runtime)
 	vm.pop("OP_TYPE_DECLARE")
-
-	// Push the type object back on stack for OP_STORE
 	vm.push(typeObj)
 }
 
-func (vm *VM) execEmitEvent() {
-	// Skip the event name index operand (we get it from stack)
+func (vm *VM) execGetEnvStmt(op byte) {
 	vm.ip++
+	variableName := vm.pop("OP_GET_ENV")
+	variableNameStr := extractValue(variableName)
 
-	// Pop event data from stack
+	value, ok := os.LookupEnv(variableNameStr)
+	if !ok {
+		panic(fmt.Sprintf("Environment variable '%s' not found", variableNameStr))
+	}
+
+	fmt.Printf("Environment variable '%s' accessed with value: %s\n", variableNameStr, value)
+	vm.push(value)
+}
+
+func (vm *VM) execEmitEvent() {
+	vm.ip++
 	eventPayload := vm.pop("OP_EMIT_EVENT")
 	eventType := vm.pop("OP_EMIT_EVENT")
 
-	// Create event journal entry
 	eventData := fmt.Sprintf("%v:%v", eventType, eventPayload)
 	hashBytes := sha256.Sum256([]byte(eventData))
 	hash := "0x" + hex.EncodeToString(hashBytes[:])
@@ -724,12 +716,9 @@ func (vm *VM) execEmitEvent() {
 		Type:    extractValue(eventType),
 		Payload: map[string]interface{}{"data": eventPayload},
 		Hash:    hash,
-		// Timestamp can be added here if needed
 	}
 
-	// Append to journal
 	vm.journal = append(vm.journal, journalEvent)
-
 	fmt.Printf("Event emitted: Type=%s, Hash=%s\n", journalEvent.Type, journalEvent.Hash)
 }
 

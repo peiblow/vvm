@@ -102,3 +102,9 @@ type MemberExpr struct {
 }
 
 func (n MemberExpr) expr() {}
+
+type GetEnvExpr struct {
+	VariableName Expr
+}
+
+func (n GetEnvExpr) expr() {}

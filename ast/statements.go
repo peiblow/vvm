@@ -117,3 +117,9 @@ type EmitStmt struct {
 }
 
 func (n EmitStmt) stmt() {}
+
+type GetEnvStmt struct {
+	VariableName Expr
+}
+
+func (n GetEnvStmt) stmt() {}

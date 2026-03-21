@@ -75,10 +75,14 @@ func parse_null_expr(p *parser) ast.Expr {
 	return ast.NullExpr{}
 }
 
-func parse_this_expr(p *parser) ast.Expr {
-	p.expect(lexer.THIS)
-
-	return ast.ThisExpr{}
+func parse_get_env_expr(p *parser) ast.Expr {
+	p.expect(lexer.GET_ENV)
+	p.expect(lexer.OPEN_PAREN)
+	variableName := parse_expr(p, defalt_bp)
+	p.expect(lexer.CLOSE_PAREN)
+	return ast.GetEnvExpr{
+		VariableName: variableName,
+	}
 }
 
 func parse_incdec_expr(p *parser, left ast.Expr, bp binding_power) ast.Expr {

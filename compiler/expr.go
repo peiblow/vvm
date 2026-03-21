@@ -36,6 +36,8 @@ func (c *Compiler) compileExpr(expr ast.Expr) {
 		c.emit(OP_SLOAD, 0)
 	case ast.NullExpr:
 		c.emit(OP_NULL)
+	case ast.GetEnvExpr:
+		c.compileGetEnvExpr(e)
 	}
 }
 
@@ -245,10 +247,6 @@ func (c *Compiler) compileBuiltinOrUserCall(name string) {
 		c.emit(OP_PRINT)
 	case "len", "length":
 		c.emit(OP_LENGTH)
-	case "_transfer":
-		c.emit(OP_TRANSFER)
-	case "balanceOf":
-		c.emit(OP_BALANCE_OF)
 	case "require":
 		c.emit(OP_REQUIRE)
 	default:

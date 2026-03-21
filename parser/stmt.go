@@ -261,7 +261,7 @@ func parse_type_stmt(p *parser) ast.Stmt {
 
 	fields := make(map[string]ast.Expr)
 	for p.currentTokenType() != lexer.CLOSE_CURLY {
-		fieldKey := p.expectError(lexer.IDENTIFIER, "Expected rule identifier in policy declaration").Literal
+		fieldKey := p.expectError(lexer.IDENTIFIER, "Expected type identifier in type declaration").Literal
 		p.expect(lexer.COLON)
 		fieldType := parse_expr(p, defalt_bp)
 		fields[fieldKey] = fieldType

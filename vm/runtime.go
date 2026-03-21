@@ -104,9 +104,9 @@ func (r *Runtime) HandleConnection(conn net.Conn) {
 func (r *Runtime) processMessage(msg *WireMessage) WireResponse {
 	switch msg.Type {
 	case "DEPLOY":
-		return r.handleDeploy(msg)
+		return r.HandleDeploy(msg)
 	case "EXEC":
-		return r.handleExec(msg)
+		return r.HandleExec(msg)
 	case "PING":
 		return WireResponse{
 			Type:    "PONG",
@@ -123,7 +123,7 @@ func (r *Runtime) processMessage(msg *WireMessage) WireResponse {
 	}
 }
 
-func (r *Runtime) handleDeploy(msg *WireMessage) WireResponse {
+func (r *Runtime) HandleDeploy(msg *WireMessage) WireResponse {
 	fmt.Printf("Received DEPLOY request with ID %s\n", msg.ID)
 	var req DeployRequest
 	if err := json.Unmarshal(msg.Data, &req); err != nil {
@@ -215,7 +215,7 @@ func (r *Runtime) handleDeploy(msg *WireMessage) WireResponse {
 	}
 }
 
-func (r *Runtime) handleExec(msg *WireMessage) WireResponse {
+func (r *Runtime) HandleExec(msg *WireMessage) WireResponse {
 	fmt.Printf("Received EXEC request with ID %s\n", msg.ID)
 
 	var req ExecRequest

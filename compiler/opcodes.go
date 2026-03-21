@@ -28,8 +28,11 @@ const (
 	OP_PLUS_EQ = 0x0D // incremento e atribuição
 
 	// I/O
-	OP_PRINT = 0x11 // imprime valor do topo
-	OP_NOP   = 0x12 // instrução nula
+	OP_PRINT   = 0x11 // imprime valor do topo
+	OP_GET_ENV = 0x20 // obtém variável de ambiente
+	OP_HASH    = 0x21 // calcula hash de valor do topo
+	OP_NONCE   = 0x22 // gera nonce aleatório
+	OP_NOP     = 0x12 // instrução nula
 
 	// Controle de fluxo
 	OP_JMP    = 0x13 // salto incondicional
@@ -58,12 +61,9 @@ const (
 	OP_TYPE_DECLARE   = 0x5F // declara tipo
 
 	// Blockchain/Smart Contract
-	OP_REWARD     = 0x50 // distribui recompensa
-	OP_EMIT       = 0x51 // emite evento
-	OP_TRANSFER   = 0x52 // transfere valor entre contas
-	OP_BALANCE_OF = 0x53 // verifica saldo de endereço
-	OP_REQUIRE    = 0x54 // verifica condição (reverte se falso)
-	OP_ERR        = 0x55 // lança erro/exceção
+	OP_EMIT    = 0x51 // emite evento
+	OP_REQUIRE = 0x52 // verifica condição (reverte se falso)
+	OP_ERR     = 0x53 // lança erro/exceção
 
 	// Objetos
 	OP_PUSH_OBJECT  = 0x60 // cria objeto vazio na pilha
@@ -102,10 +102,10 @@ var OpcodeNames = map[byte]string{
 	OP_STORE:         "STORE",
 	OP_SLOAD:         "SLOAD",
 	OP_DELETE:        "DELETE",
-	OP_REWARD:        "REWARD",
 	OP_EMIT:          "EMIT",
-	OP_TRANSFER:      "TRANSFER",
-	OP_BALANCE_OF:    "BALANCE_OF",
+	OP_GET_ENV:       "GET_ENV",
+	OP_HASH:          "HASH",
+	OP_NONCE:         "NONCE",
 	OP_REQUIRE:       "REQUIRE",
 	OP_AGENT_DECLARE: "REGISTRY_DECLARE",
 	OP_AGENT_GET:     "REGISTRY_GET",

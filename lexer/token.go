@@ -20,6 +20,9 @@ const (
 	ACTION
 	EMIT
 	REQUIRE
+	HASH
+	GET_ENV
+	NONCE
 	// Grouping & Braces
 	OPEN_BRACKET
 	CLOSE_BRACKET
@@ -70,7 +73,6 @@ const (
 	WHILE
 	FOR
 	RETURN
-	THIS
 	// Misc
 	NUM_TOKENS
 )
@@ -90,7 +92,6 @@ var reserved_lu map[string]TokenType = map[string]TokenType{
 	// Variables
 	"const": CONST,
 	"let":   LET,
-	"this":  THIS,
 	// Synx-specific
 	"contract": CONTRACT,
 	"agent":    AGENT,
@@ -99,6 +100,9 @@ var reserved_lu map[string]TokenType = map[string]TokenType{
 	"action":   ACTION,
 	"emit":     EMIT,
 	"require":  REQUIRE,
+	"nonce":    NONCE,
+	"hash":     HASH,
+	"getEnv":   GET_ENV,
 	// Literals — were missing, caused `true`/`false`/`null` to tokenize as IDENTIFIER
 	"true":  TRUE,
 	"false": FALSE,
@@ -155,6 +159,12 @@ func TokenTypeString(tp TokenType) string {
 		return "action"
 	case EMIT:
 		return "emit"
+	case GET_ENV:
+		return "get_env"
+	case HASH:
+		return "hash"
+	case NONCE:
+		return "nonce"
 	case REQUIRE:
 		return "require"
 	case OPEN_BRACKET:
@@ -241,8 +251,6 @@ func TokenTypeString(tp TokenType) string {
 		return "const"
 	case RETURN:
 		return "return"
-	case THIS:
-		return "this"
 	default:
 		return fmt.Sprintf("unknown(%d)", tp)
 	}
