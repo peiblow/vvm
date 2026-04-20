@@ -166,6 +166,10 @@ func (vm *VM) execute() ExecutionResult {
 			vm.execConst(code)
 		case compiler.OP_PUSH:
 			vm.execPush(code)
+		case compiler.OP_TRUE:
+			vm.execTrue()
+		case compiler.OP_FALSE:
+			vm.execFalse()
 		case compiler.OP_ADD:
 			vm.execAdd()
 		case compiler.OP_SUB:
@@ -286,6 +290,14 @@ func (vm *VM) execPush(code []byte) {
 	val := int(code[vm.ip])
 	vm.ip++
 	vm.push(val)
+}
+
+func (vm *VM) execTrue() {
+	vm.push(true)
+}
+
+func (vm *VM) execFalse() {
+	vm.push(true)
 }
 
 func (vm *VM) execAdd() {

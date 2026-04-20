@@ -16,7 +16,7 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "local" {
 		fmt.Println("Running in local mode with mock runtime")
 		func() {
-			contract, err := os.ReadFile("contracts/00.snx")
+			contract, err := os.ReadFile("contracts/governance_contract.snx")
 			if err != nil {
 				fmt.Println("Error reading contract file:", err)
 				return
@@ -24,9 +24,9 @@ func main() {
 			// Simulate a DEPLOY request
 			deployReq := vm.DeployRequest{
 				Hash:         "mockhash",
-				ContractName: "MockContract",
-				Version:      "0.1.0",
-				Owner:        "0xMockOwner",
+				ContractName: "SynxGovernance",
+				Version:      "2.0.0",
+				Owner:        "0xA1B2C3D4",
 				Source:       []byte(contract),
 			}
 
@@ -56,14 +56,15 @@ func main() {
 			execReq := vm.ExecRequest{
 				ArtifactHash:     "mockhash",
 				ContractArtifact: json.RawMessage(artifactBytes),
-				Function:         "pow",
+				Function:         "creditDecision",
 				Args: map[string]interface{}{
-					"input": map[string]interface{}{
-						"commitment_id": "mock_commitment_id",
-						"tx_hash":       "mock_tx_hash",
-						"amount":        1000,
-						"timestamp":     1234567890,
-						"uniqueNonce":   "mock_unique_nonce",
+					"request": map[string]interface{}{
+						"client":      "0xCLIENT001",
+						"model_id":    "credit_model_v1",
+						"score":       750,
+						"income":      80000,
+						"debtPercent": 20,
+						"amount":      50000,
 					},
 				},
 			}

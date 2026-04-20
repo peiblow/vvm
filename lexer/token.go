@@ -17,7 +17,6 @@ const (
 	AGENT
 	POLICY
 	TYPE
-	ACTION
 	EMIT
 	REQUIRE
 	HASH
@@ -77,6 +76,13 @@ const (
 	NUM_TOKENS
 )
 
+// IsKeyword returns true if the token type is a reserved keyword
+// (including synx-specific keywords like contract, agent, hash, nonce, etc.).
+func IsKeyword(tp TokenType) bool {
+	return (tp >= CONTRACT && tp <= NONCE) || (tp >= LET && tp <= RETURN) ||
+		tp == NULL || tp == TRUE || tp == FALSE
+}
+
 // BUG FIX: `true`, `false`, and `null` were defined as TokenTypes but were
 // missing from reserved_lu, so they were being emitted as IDENTIFIER tokens
 // instead of their correct types.
@@ -97,7 +103,6 @@ var reserved_lu map[string]TokenType = map[string]TokenType{
 	"agent":    AGENT,
 	"policy":   POLICY,
 	"type":     TYPE,
-	"action":   ACTION,
 	"emit":     EMIT,
 	"require":  REQUIRE,
 	"nonce":    NONCE,
@@ -155,8 +160,6 @@ func TokenTypeString(tp TokenType) string {
 		return "policy"
 	case TYPE:
 		return "type"
-	case ACTION:
-		return "action"
 	case EMIT:
 		return "emit"
 	case GET_ENV:

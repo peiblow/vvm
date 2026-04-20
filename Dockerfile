@@ -1,32 +1,29 @@
-# ─────────────────────────────────────────────
-#  synx-core / vvm
-#  Go multi-stage build
-# ─────────────────────────────────────────────
- 
-# Stage 1 — Build
 FROM golang:1.25-alpine AS builder
- 
 WORKDIR /app
- 
-RUN apk add --no-cache git ca-certificates tzdata
-RUN apk add --no-cache netcat-openbsd
- 
+
+RUN apk add --no-cache ca-certificates tzdata
+RUN adduser -D -u 1001 synx
+
 COPY go.mod go.sum ./
 RUN go mod download
- 
+
 COPY . .
- 
+
+ARG VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="-w -s" -o /bin/vvm .
- 
-# Stage 2 — Runtime (minimal image)
+    go build \
+    -ldflags="-w -s -X main.Version=${VERSION}" \
+    -o /bin/vvm .
+
 FROM scratch
- 
+
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --from=builder /bin/vvm /bin/vvm
- 
-# SWP (Synx Wire Protocol) TCP port
-EXPOSE 4000
- 
+COPY --from=builder /usr/share/zoneinfo                 /usr/share/zoneinfo
+COPY --from=builder /etc/passwd                         /etc/passwd
+COPY --from=builder /bin/vvm                            /bin/vvm
+
+USER synx
+
+EXPOSE 8332
+
 ENTRYPOINT ["/bin/vvm"]

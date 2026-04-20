@@ -25,7 +25,12 @@ type ThisExpr struct{}
 
 func (n ThisExpr) expr() {}
 
-// Complex Expressions
+type BooleanLiteralExpr struct {
+	Value bool
+}
+
+func (n BooleanLiteralExpr) expr() {}
+
 type BinaryExpr struct {
 	Left     Expr
 	Operator lexer.Token

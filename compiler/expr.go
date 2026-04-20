@@ -14,6 +14,8 @@ func (c *Compiler) compileExpr(expr ast.Expr) {
 		c.compileString(e)
 	case ast.SymbolExpr:
 		c.compileSymbol(e)
+	case ast.BooleanLiteralExpr:
+		c.compileBool(e)
 	case ast.ArrayLiteralExpr:
 		c.compileArrayLiteral(e)
 	case ast.AssignmentExpr:
@@ -64,6 +66,14 @@ func (c *Compiler) compileString(e ast.StringExpr) {
 func (c *Compiler) compileSymbol(e ast.SymbolExpr) {
 	slot := c.Symbols[e.Value]
 	c.emit(OP_SLOAD, byte(slot))
+}
+
+func (c *Compiler) compileBool(e ast.BooleanLiteralExpr) {
+	if e.Value {
+		c.emit(OP_TRUE)
+	} else {
+		c.emit(OP_FALSE)
+	}
 }
 
 func (c *Compiler) compileArrayLiteral(e ast.ArrayLiteralExpr) {

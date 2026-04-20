@@ -50,6 +50,18 @@ func (p *parser) expectError(expectedType lexer.TokenType, err any) lexer.Token 
 	return p.advance()
 }
 
+// expectIdentifierOrKeyword consumes the current token if it is an IDENTIFIER
+// or any reserved keyword, returning its literal as a name. This allows
+// keywords like "nonce" or "hash" to be used as field/property names.
+func (p *parser) expectIdentifierOrKeyword(errMsg string) string {
+	token := p.currentToken()
+	if token.Type == lexer.IDENTIFIER || lexer.IsKeyword(token.Type) {
+		p.advance()
+		return token.Literal
+	}
+	panic(errMsg)
+}
+
 func createParser(tokens []lexer.Token) *parser {
 	createTokenLookups()
 	createTokenTypeLookups()

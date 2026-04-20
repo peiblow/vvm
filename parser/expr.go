@@ -187,7 +187,8 @@ func parse_array_access_item_expr(p *parser, identifier ast.Expr, bp binding_pow
 }
 
 func parse_obj_item_assignment_expr(p *parser) ast.ObjectPropertyExpr {
-	key := parse_expr(p, defalt_bp)
+	keyName := p.expectIdentifierOrKeyword("Expected property name in object literal")
+	key := ast.SymbolExpr{Value: keyName}
 	p.expect(lexer.COLON)
 
 	value := parse_expr(p, defalt_bp)
@@ -222,12 +223,8 @@ func parse_obj_assignment_expr(p *parser) ast.Expr {
 func parse_member_expr(p *parser, callee ast.Expr, bp binding_power) ast.Expr {
 	p.expect(lexer.DOT)
 
-	if p.currentTokenType() != lexer.IDENTIFIER {
-		panic(fmt.Sprintf("Expected identifier after '.', got %v", p.currentToken().Literal))
-	}
-
 	prop := ast.SymbolExpr{
-		Value: p.advance().Literal,
+		Value: p.expectIdentifierOrKeyword(fmt.Sprintf("Expected identifier after '.', got %v", p.currentToken().Literal)),
 	}
 
 	return ast.MemberExpr{
@@ -253,5 +250,13 @@ func parse_call_expr(p *parser, callee ast.Expr, bp binding_power) ast.Expr {
 	return ast.CallExpr{
 		Calle:     callee,
 		Arguments: args,
+	}
+}
+
+func parse_bool_expr(p *parser) ast.Expr {
+	token := p.advance()
+
+	return ast.BooleanLiteralExpr{
+		Value: token.Type == lexer.TRUE,
 	}
 }

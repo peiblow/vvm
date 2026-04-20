@@ -96,10 +96,6 @@ func Analyze(block ast.BlockStmt) AnalysisResult {
 		if contract, ok := stmt.(ast.ContractStmt); ok {
 			a.analyzeContract(contract)
 
-			if !a.isFunctionDeclared("pow") || !a.isFunctionDeclared("approve") {
-				a.addError("fn 'approve' or 'pow' is required but not implemented")
-			}
-
 			return AnalysisResult{Errors: a.errors}
 		}
 	}

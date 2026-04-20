@@ -247,7 +247,6 @@ func (r *Runtime) HandleExec(msg *WireMessage) WireResponse {
 		}
 	}
 
-	// Unwrap named args into ordered values matching function parameter order
 	funcMeta, funcExists := artifact.Functions[req.Function]
 	if !funcExists {
 		return WireResponse{
@@ -295,7 +294,6 @@ func (r *Runtime) HandleExec(msg *WireMessage) WireResponse {
 			"artifact_hash": req.ArtifactHash,
 			"function":      req.Function,
 			"journal":       result.Journal,
-			"exec_price":    0,
 		},
 	}
 }

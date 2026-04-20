@@ -5,6 +5,9 @@ const (
 	// Fim do programa
 	OP_HALT = 0x00
 
+	OP_TRUE  = 0xFE // valor booleano true
+	OP_FALSE = 0xFF // valor booleano false
+
 	// Operações de pilha
 	OP_CONST = 0x01 // carrega constante do pool
 	OP_PUSH  = 0x02 // empilha valor imediato
