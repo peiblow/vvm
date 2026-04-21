@@ -75,7 +75,7 @@ func (lex *lexer) addError(msg string) {
 func defaultHandler(tp TokenType, value string) regexHandler {
 	return func(lex *lexer, regex *regexp.Regexp) {
 		lex.advanceN(len(value))
-		lex.push(NewToken(tp, value))
+		lex.push(NewToken(tp, value, lex.line))
 	}
 }
 
@@ -115,13 +115,13 @@ func blockCommentHandler(lex *lexer, regex *regexp.Regexp) {
 
 func numberHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindString(lex.remainder())
-	lex.push(NewToken(NUMBER, match))
+	lex.push(NewToken(NUMBER, match, lex.line))
 	lex.advanceN(len(match))
 }
 
 func hexNumberHandler(lex *lexer, regex *regexp.Regexp) {
 	match := regex.FindString(lex.remainder())
-	lex.push(NewToken(HEX_NUMBER, match))
+	lex.push(NewToken(HEX_NUMBER, match, lex.line))
 	lex.advanceN(len(match))
 }
 
@@ -134,7 +134,7 @@ func stringHandler(lex *lexer, regex *regexp.Regexp) {
 	}
 	raw := lex.remainder()[match[0]:match[1]]
 	literal := raw[1 : len(raw)-1]
-	lex.push(NewToken(STRING, literal))
+	lex.push(NewToken(STRING, literal, lex.line))
 	lex.advanceN(len(raw))
 }
 
@@ -148,9 +148,9 @@ func symbolHandler(lex *lexer, regex *regexp.Regexp) {
 	value := regex.FindString(lex.remainder())
 
 	if tp, exists := reserved_lu[value]; exists {
-		lex.push(NewToken(tp, value))
+		lex.push(NewToken(tp, value, lex.line))
 	} else {
-		lex.push(NewToken(IDENTIFIER, value))
+		lex.push(NewToken(IDENTIFIER, value, lex.line))
 	}
 
 	lex.advanceN(len(value))
@@ -263,7 +263,7 @@ func Tokenize(input string) TokenizeResult {
 		}
 	}
 
-	lex.push(NewToken(EOF, "EOF"))
+	lex.push(NewToken(EOF, "EOF", lex.line))
 
 	return TokenizeResult{
 		Tokens: lex.tokens,

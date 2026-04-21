@@ -239,7 +239,7 @@ func (vm *VM) execute() ExecutionResult {
 		case compiler.OP_NONCE:
 			vm.execNonce()
 		case compiler.OP_HASH:
-			vm.execHash()
+			vm.execHash(code)
 		case compiler.OP_ERR:
 			vm.execErr()
 		case compiler.OP_DELETE:
@@ -313,25 +313,38 @@ func (vm *VM) execAdd() {
 		switch bv := b.(type) {
 		case int:
 			vm.push(av + bv)
+		case float64:
+			vm.push(float64(av) + bv)
 		case string:
 			vm.push(strconv.Itoa(av) + bv)
 		default:
 			panic("[INT] unsupported ADD type")
 		}
+	case float64:
+		switch bv := b.(type) {
+		case float64:
+			vm.push(av + bv)
+		case int:
+			vm.push(av + float64(bv))
+		case string:
+			vm.push(strconv.FormatFloat(av, 'f', -1, 64) + bv)
+		default:
+			panic("[FLOAT] unsupported ADD type")
+		}
 	case string:
 		switch bv := b.(type) {
 		case int:
 			vm.push(av + strconv.Itoa(bv))
+		case float64:
+			vm.push(av + strconv.FormatFloat(bv, 'f', -1, 64))
 		case string:
 			vm.push(av + bv)
-		case float64:
-			vm.push(av + strconv.FormatFloat(bv, 'f', 0, 64))
 		default:
 			fmt.Println(reflect.TypeOf(bv))
 			panic("[STR] unsupported ADD type")
 		}
 	default:
-		panic("[DFT] unsupported ADD type")
+		panic(fmt.Sprintf("[DFT] unsupported ADD type: %T", a))
 	}
 }
 
@@ -503,14 +516,24 @@ func (vm *VM) execAccess() {
 
 	switch obj := target.(type) {
 	case []interface{}:
-		idx, ok := key.(int)
-		if !ok {
-			panic(fmt.Sprintf("Array index must be int, got %T", key))
+		switch k := key.(type) {
+		case int:
+			if k < 0 || k >= len(obj) {
+				panic(fmt.Sprintf("Array index out of bounds: %d", k))
+			}
+			vm.push(obj[k])
+		case string:
+			var found interface{}
+			for _, item := range obj {
+				if extractValue(item) == k {
+					found = item
+					break
+				}
+			}
+			vm.push(found)
+		default:
+			panic(fmt.Sprintf("Array index must be int or string, got %T", key))
 		}
-		if idx < 0 || idx >= len(obj) {
-			panic(fmt.Sprintf("Array index out of bounds: %d", idx))
-		}
-		vm.push(obj[idx])
 	case map[string]interface{}:
 		prop, ok := key.(string)
 		if !ok {
@@ -736,12 +759,23 @@ func (vm *VM) execNonce() {
 	vm.push(nonceHex)
 }
 
-func (vm *VM) execHash() {
-	dataVal := vm.pop("OP_HASH")
-	hashTypeVal := vm.pop("OP_HASH")
+func (vm *VM) execHash(code []byte) {
+	count := int(code[vm.ip])
+	vm.ip++
 
-	hashTypeStr := extractValue(hashTypeVal)
-	dataStr := extractValue(dataVal)
+	parts := make([]string, count)
+	for i := count - 1; i >= 0; i-- {
+		parts[i] = extractValue(vm.pop("OP_HASH"))
+	}
+	hashTypeStr := extractValue(vm.pop("OP_HASH"))
+
+	dataStr := ""
+	for i, p := range parts {
+		if i > 0 {
+			dataStr += ":"
+		}
+		dataStr += p
+	}
 
 	var hashBytes []byte
 	switch hashTypeStr {

@@ -335,6 +335,8 @@ func (c *Compiler) compileNonceExpr(e ast.NonceExpr) {
 
 func (c *Compiler) compileHashExpr(e ast.HashExpr) {
 	c.compileExpr(e.HashType)
-	c.compileExpr(e.Data)
-	c.emit(OP_HASH)
+	for _, d := range e.Data {
+		c.compileExpr(d)
+	}
+	c.emit(OP_HASH, byte(len(e.Data)))
 }

@@ -117,12 +117,14 @@ var reserved_lu map[string]TokenType = map[string]TokenType{
 type Token struct {
 	Type    TokenType
 	Literal string
+	Line    int
 }
 
-func NewToken(t TokenType, value string) Token {
+func NewToken(t TokenType, value string, line int) Token {
 	return Token{
 		Type:    t,
 		Literal: value,
+		Line:    line,
 	}
 }
 

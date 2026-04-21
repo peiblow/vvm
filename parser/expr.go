@@ -13,7 +13,7 @@ func parse_expr(p *parser, bp binding_power) ast.Expr {
 	nud_fn, exists := nud_lu[tokenType]
 
 	if !exists {
-		panic(fmt.Sprintf("NUD handler expected for token %v - %v", tokenType, p.currentToken().Literal))
+		panic(fmt.Sprintf("[linha %d] unexpected token '%v'", p.currentToken().Line, p.currentToken().Literal))
 	}
 
 	left := nud_fn(p)
@@ -23,7 +23,7 @@ func parse_expr(p *parser, bp binding_power) ast.Expr {
 		led_fn, exists := led_lu[tokenType]
 
 		if !exists {
-			panic(fmt.Sprintf("LED handler expected for token %v", tokenType))
+			panic(fmt.Sprintf("[linha %d] unexpected token '%v' in expression", p.currentToken().Line, p.currentToken().Literal))
 		}
 
 		left = led_fn(p, left, bp_lu[p.currentTokenType()])
@@ -100,8 +100,13 @@ func parse_hash_expr(p *parser) ast.Expr {
 	p.expect(lexer.HASH)
 	p.expect(lexer.OPEN_PAREN)
 	hashType := parse_expr(p, defalt_bp)
-	p.expect(lexer.COMMA)
-	data := parse_expr(p, defalt_bp)
+
+	data := []ast.Expr{}
+	for p.currentTokenType() == lexer.COMMA {
+		p.advance()
+		data = append(data, parse_expr(p, defalt_bp))
+	}
+
 	p.expect(lexer.CLOSE_PAREN)
 
 	return ast.HashExpr{

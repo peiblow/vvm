@@ -16,7 +16,7 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "local" {
 		fmt.Println("Running in local mode with mock runtime")
 		func() {
-			contract, err := os.ReadFile("contracts/governance_contract.snx")
+			contract, err := os.ReadFile("contracts/agent_governance.snx")
 			if err != nil {
 				fmt.Println("Error reading contract file:", err)
 				return
@@ -24,9 +24,9 @@ func main() {
 			// Simulate a DEPLOY request
 			deployReq := vm.DeployRequest{
 				Hash:         "mockhash",
-				ContractName: "SynxGovernance",
-				Version:      "2.0.0",
-				Owner:        "0xA1B2C3D4",
+				ContractName: "SynxAgentGov",
+				Version:      "1.0.0",
+				Owner:        "0xAB1234CD56EF7890",
 				Source:       []byte(contract),
 			}
 
@@ -56,15 +56,15 @@ func main() {
 			execReq := vm.ExecRequest{
 				ArtifactHash:     "mockhash",
 				ContractArtifact: json.RawMessage(artifactBytes),
-				Function:         "creditDecision",
+				Function:         "authorizeAction",
 				Args: map[string]interface{}{
-					"request": map[string]interface{}{
-						"client":      "0xCLIENT001",
-						"model_id":    "credit_model_v1",
-						"score":       750,
-						"income":      80000,
-						"debtPercent": 20,
-						"amount":      50000,
+					"input": map[string]interface{}{
+						"agent_id":                "0xAB1234CD56EF7890",
+						"action_type":             "revoke_all_tokens",
+						"cost_type":               "transaction",
+						"amount":                  100,
+						"daily_transaction_spend": 400,
+						"target_domain":           "trusted.com",
 					},
 				},
 			}

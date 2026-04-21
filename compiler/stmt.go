@@ -73,7 +73,9 @@ func (c *Compiler) compileVarDecl(s ast.VarDeclStmt) {
 }
 
 func (c *Compiler) compileReturn(s ast.ReturnStmt) {
-	c.compileExpr(s.Value)
+	if s.Value != nil {
+		c.compileExpr(s.Value)
+	}
 	if c.isInFunction {
 		c.emit(OP_RET)
 	} else {

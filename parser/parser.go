@@ -40,8 +40,7 @@ func (p *parser) expectError(expectedType lexer.TokenType, err any) lexer.Token 
 
 	if tokenType != expectedType {
 		if err == nil {
-			err = fmt.Sprintf("Expected %s but received %s instead\n", lexer.TokenTypeString(expectedType), lexer.TokenTypeString(tokenType))
-			fmt.Println(token)
+			err = fmt.Sprintf("[linha %d] expected %s but received %s instead", token.Line, lexer.TokenTypeString(expectedType), lexer.TokenTypeString(tokenType))
 		}
 
 		panic(err)
@@ -59,7 +58,7 @@ func (p *parser) expectIdentifierOrKeyword(errMsg string) string {
 		p.advance()
 		return token.Literal
 	}
-	panic(errMsg)
+	panic(fmt.Sprintf("[linha %d] %s", token.Line, errMsg))
 }
 
 func createParser(tokens []lexer.Token) *parser {

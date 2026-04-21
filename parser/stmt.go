@@ -181,6 +181,10 @@ func parse_func_stmt(p *parser) ast.Stmt {
 func parse_return_stmt(p *parser) ast.Stmt {
 	p.expect(lexer.RETURN)
 
+	if p.currentTokenType() == lexer.CLOSE_CURLY || p.currentTokenType() == lexer.EOF {
+		return ast.ReturnStmt{Value: nil}
+	}
+
 	value := parse_expr(p, defalt_bp)
 
 	return ast.ReturnStmt{

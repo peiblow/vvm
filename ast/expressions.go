@@ -122,7 +122,7 @@ func (n NonceExpr) expr() {}
 
 type HashExpr struct {
 	HashType Expr
-	Data     Expr
+	Data     []Expr
 }
 
 func (n HashExpr) expr() {}
