@@ -101,7 +101,18 @@ func (r *Runtime) HandleConnection(conn net.Conn) {
 	}
 }
 
-func (r *Runtime) processMessage(msg *WireMessage) WireResponse {
+func (r *Runtime) processMessage(msg *WireMessage) (resp WireResponse) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			resp = WireResponse{
+				Type:    "ERROR",
+				ID:      msg.ID,
+				Success: false,
+				Error:   fmt.Sprintf("internal error: %v", rec),
+			}
+		}
+	}()
+
 	switch msg.Type {
 	case "DEPLOY":
 		return r.HandleDeploy(msg)

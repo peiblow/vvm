@@ -145,7 +145,17 @@ func (vm *VM) RunFunction(funcName string, args ...interface{}) ExecutionResult 
 	// return vm.execute()
 }
 
-func (vm *VM) execute() ExecutionResult {
+func (vm *VM) execute() (result ExecutionResult) {
+	defer func() {
+		if r := recover(); r != nil {
+			result = ExecutionResult{
+				Success: false,
+				Journal: vm.journal,
+				Error:   fmt.Errorf("runtime panic: %v", r),
+			}
+		}
+	}()
+
 	code := vm.compiler.Code
 
 	for {
