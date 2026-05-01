@@ -265,3 +265,19 @@ func parse_bool_expr(p *parser) ast.Expr {
 		Value: token.Type == lexer.TRUE,
 	}
 }
+
+func parse_error_expr(p *parser) ast.Expr {
+	p.expect(lexer.ERROR)
+	p.expect(lexer.OPEN_PAREN)
+
+	code := parse_expr(p, defalt_bp)
+	p.expect(lexer.COMMA)
+	errorMessage := parse_expr(p, defalt_bp)
+
+	p.expect(lexer.CLOSE_PAREN)
+
+	return ast.ErrorExpr{
+		Code:    code,
+		Message: errorMessage,
+	}
+}

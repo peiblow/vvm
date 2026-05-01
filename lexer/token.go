@@ -71,6 +71,9 @@ const (
 	FOREACH
 	WHILE
 	FOR
+	TRY
+	ERROR
+	CATCH
 	RETURN
 	// Misc
 	NUM_TOKENS
@@ -94,6 +97,9 @@ var reserved_lu map[string]TokenType = map[string]TokenType{
 	"foreach": FOREACH,
 	"while":   WHILE,
 	"for":     FOR,
+	"try":     TRY,
+	"catch":   CATCH,
+	"Error":   ERROR,
 	"return":  RETURN,
 	// Variables
 	"const": CONST,
@@ -248,6 +254,12 @@ func TokenTypeString(tp TokenType) string {
 		return "foreach"
 	case FOR:
 		return "for"
+	case TRY:
+		return "try"
+	case ERROR:
+		return "Error"
+	case CATCH:
+		return "catch"
 	case WHILE:
 		return "while"
 	case LET:

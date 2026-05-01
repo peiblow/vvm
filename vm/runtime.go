@@ -35,7 +35,7 @@ type WireResponse struct {
 	ID      string
 	Success bool
 	Data    interface{}
-	Error   string
+	Error   interface{}
 }
 
 type DeployRequest struct {
@@ -293,7 +293,7 @@ func (r *Runtime) HandleExec(msg *WireMessage) WireResponse {
 			Type:    "EXEC_RESPONSE",
 			ID:      msg.ID,
 			Success: false,
-			Error:   result.Error.Error(),
+			Error:   result.Error,
 		}
 	}
 
@@ -306,6 +306,7 @@ func (r *Runtime) HandleExec(msg *WireMessage) WireResponse {
 			"function":      req.Function,
 			"journal":       result.Journal,
 		},
+		Error: result.Error,
 	}
 }
 

@@ -104,10 +104,14 @@ func parse_if_stmt(p *parser) ast.Stmt {
 	p.expect(lexer.CLOSE_PAREN)
 
 	thenBlock := parse_block(p)
-	var elseBlock ast.BlockStmt
+	var elseBlock ast.Stmt
 	if p.currentTokenType() == lexer.ELSE {
 		p.advance()
-		elseBlock = parse_block(p)
+		if p.currentTokenType() == lexer.IF {
+			elseBlock = parse_if_stmt(p)
+		} else {
+			elseBlock = parse_block(p)
+		}
 	}
 
 	return ast.IfStmt{
@@ -296,5 +300,27 @@ func parse_emit_stmt(p *parser) ast.Stmt {
 	return ast.EmitStmt{
 		EventName: eventName,
 		Arguments: args,
+	}
+}
+
+func parse_try_stmt(p *parser) ast.Stmt {
+	p.expect(lexer.TRY)
+	tryBlock := parse_block(p)
+
+	var catchVar string
+	var catchBlock ast.BlockStmt
+	if p.currentTokenType() == lexer.CATCH {
+		p.expect(lexer.CATCH)
+		p.expect(lexer.OPEN_PAREN)
+		catchVar = p.expectIdentifierOrKeyword("Expected error variable name in catch statement")
+		p.expect(lexer.CLOSE_PAREN)
+
+		catchBlock = parse_block(p)
+	}
+
+	return ast.TryCatchStmt{
+		TryBlock:   tryBlock.Body,
+		CatchVar:   catchVar,
+		CatchBlock: catchBlock.Body,
 	}
 }

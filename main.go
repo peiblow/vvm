@@ -60,9 +60,9 @@ func main() {
 				Args: map[string]interface{}{
 					"input": map[string]interface{}{
 						"agent_id":                "0xAB1234CD56EF7890",
-						"action_type":             "revoke_all_tokens",
+						"action_type":             "send_email",
 						"cost_type":               "transaction",
-						"amount":                  100,
+						"amount":                  600,
 						"daily_transaction_spend": 400,
 						"target_domain":           "trusted.com",
 					},

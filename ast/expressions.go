@@ -126,3 +126,10 @@ type HashExpr struct {
 }
 
 func (n HashExpr) expr() {}
+
+type ErrorExpr struct {
+	Code    Expr
+	Message Expr
+}
+
+func (n ErrorExpr) expr() {}

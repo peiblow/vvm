@@ -34,7 +34,8 @@ func (c *Compiler) compileStmt(stmt ast.Stmt) {
 		c.compileTypeDeclareStmt(s)
 	case ast.EmitStmt:
 		c.compileEmitStmt(s)
-
+	case ast.TryCatchStmt:
+		c.compileTryCatchStmt(s)
 	default:
 		fmt.Printf("Unrecognized statement type: %T\n", s)
 	}
@@ -236,20 +237,19 @@ func (c *Compiler) compileWhile(s ast.WhileStmt) {
 func (c *Compiler) compileRequire(s ast.RequireStmt) {
 	c.compileExpr(s.Condition)
 
-	jmpToEndPos := c.currentPos()
+	jmpToErrorPos := c.currentPos()
 	c.emit(OP_JMP_IF, 0, 0)
 
 	jmpPastErrorPos := c.currentPos()
 	c.emit(OP_JMP, 0, 0)
 
 	errorBlockPos := c.currentPos()
-	errIdx := c.addConst(s.Message)
-	c.emit(OP_CONST, errIdx)
+	c.compileExpr(s.Message)
 	c.emit(OP_ERR)
 
 	endPos := c.currentPos()
 
-	c.patchJump(jmpToEndPos+1, errorBlockPos)
+	c.patchJump(jmpToErrorPos+1, errorBlockPos)
 	c.patchJump(jmpPastErrorPos+1, endPos)
 }
 
@@ -380,14 +380,46 @@ func (c *Compiler) compileTypeDeclareStmt(s ast.TypeDeclareStmt) {
 }
 
 func (c *Compiler) compileEmitStmt(s ast.EmitStmt) {
-	eventNameIdx := c.addConst(s.EventName)
-	c.emit(OP_CONST, eventNameIdx)
+	c.compileExpr(s.EventName)
 
 	if s.Arguments != nil {
 		c.compileExpr(s.Arguments)
 	} else {
-		c.emit(OP_ERR)
+		c.emit(OP_PUSH_OBJECT)
 	}
 
-	c.emit(OP_EMIT, byte(eventNameIdx))
+	c.emit(OP_EMIT, 0)
+}
+
+func (c *Compiler) compileTryCatchStmt(s ast.TryCatchStmt) {
+	errSlot := c.allocSlot(fmt.Sprintf("__catch_err_%d__", c.NextSlot))
+
+	tryPos := c.currentPos()
+	c.emit(OP_TRY, 0, 0, byte(errSlot))
+	for _, stmt := range s.TryBlock {
+		c.compileStmt(stmt)
+	}
+	c.emit(OP_END_TRY)
+
+	jmpEndPos := c.currentPos()
+	c.emit(OP_JMP, 0, 0)
+
+	handlerPos := c.currentPos()
+	prevSlot, hadPrev := c.Symbols[s.CatchVar]
+	c.Symbols[s.CatchVar] = errSlot
+
+	for _, stmt := range s.CatchBlock {
+		c.compileStmt(stmt)
+	}
+
+	if hadPrev {
+		c.Symbols[s.CatchVar] = prevSlot
+	} else {
+		delete(c.Symbols, s.CatchVar)
+	}
+
+	endPos := c.currentPos()
+
+	c.patchJump(tryPos+1, handlerPos)
+	c.patchJump(jmpEndPos+1, endPos)
 }

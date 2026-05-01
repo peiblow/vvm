@@ -67,6 +67,8 @@ const (
 	OP_EMIT    = 0x51 // emite evento
 	OP_REQUIRE = 0x52 // verifica condição (reverte se falso)
 	OP_ERR     = 0x53 // lança erro/exceção
+	OP_TRY     = 0x54 // inicia bloco try
+	OP_END_TRY = 0x55 // finaliza bloco try-catch
 
 	// Objetos
 	OP_PUSH_OBJECT  = 0x60 // cria objeto vazio na pilha
@@ -113,6 +115,8 @@ var OpcodeNames = map[byte]string{
 	OP_AGENT_DECLARE: "REGISTRY_DECLARE",
 	OP_AGENT_GET:     "REGISTRY_GET",
 	OP_ERR:           "ERR",
+	OP_TRY:           "TRY",
+	OP_END_TRY:       "END_TRY",
 	OP_PUSH_OBJECT:   "PUSH_OBJECT",
 	OP_SET_PROPERTY:  "SET_PROPERTY",
 	OP_GET_PROPERTY:  "GET_PROPERTY",

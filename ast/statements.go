@@ -123,3 +123,11 @@ type GetEnvStmt struct {
 }
 
 func (n GetEnvStmt) stmt() {}
+
+type TryCatchStmt struct {
+	TryBlock   []Stmt
+	CatchVar   string
+	CatchBlock []Stmt
+}
+
+func (n TryCatchStmt) stmt() {}

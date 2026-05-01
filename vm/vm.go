@@ -15,12 +15,14 @@ import (
 type VM struct {
 	compiler  *compiler.Compiler
 	stack     []interface{}
+	tryStack  []TryFrame
 	callStack []int
 	storage   map[int]interface{}
 	memory    map[int]interface{}
 	ip        int
 	errors    []error
 	journal   []JournalEvent
+	lastError map[string]interface{}
 }
 
 type JournalEvent struct {
@@ -30,10 +32,18 @@ type JournalEvent struct {
 	Timestamp int64
 }
 
+type TryFrame struct {
+	handlerAddr int
+	callDepth   int
+	stackDepth  int
+	errorSlot   int
+}
+
 func New(c *compiler.Compiler) *VM {
 	return &VM{
 		compiler:  c,
 		stack:     []interface{}{},
+		tryStack:  []TryFrame{},
 		callStack: []int{},
 		storage:   make(map[int]interface{}),
 		memory:    make(map[int]interface{}),
@@ -44,7 +54,7 @@ func New(c *compiler.Compiler) *VM {
 type ExecutionResult struct {
 	Success bool
 	Journal []JournalEvent
-	Error   error
+	Error   map[string]interface{}
 }
 
 func NewFromArtifact(artifact *compiler.ContractArtifact) *VM {
@@ -108,7 +118,10 @@ func (vm *VM) RunFunction(funcName string, args ...interface{}) ExecutionResult 
 		return ExecutionResult{
 			Success: false,
 			Journal: vm.journal,
-			Error:   fmt.Errorf("function '%s' not found in contract", funcName),
+			Error: map[string]interface{}{
+				"code":    "FUNCTION_NOT_FOUND",
+				"message": fmt.Sprintf("function '%s' not found in contract", funcName),
+			},
 		}
 	}
 
@@ -116,7 +129,10 @@ func (vm *VM) RunFunction(funcName string, args ...interface{}) ExecutionResult 
 		return ExecutionResult{
 			Success: false,
 			Journal: vm.journal,
-			Error:   fmt.Errorf("function '%s' expects %d argument(s), got %d", funcName, len(funcMeta.Args), len(args)),
+			Error: map[string]interface{}{
+				"code":    "ARG_COUNT_MISMATCH",
+				"message": fmt.Sprintf("function '%s' expects %d argument(s), got %d", funcName, len(funcMeta.Args), len(args)),
+			},
 		}
 	}
 
@@ -136,13 +152,11 @@ func (vm *VM) RunFunction(funcName string, args ...interface{}) ExecutionResult 
 		return ExecutionResult{
 			Success: false,
 			Journal: vm.journal,
-			Error:   fmt.Errorf("execution aborted due to previous errors: %v", vm.errors),
+			Error:   vm.lastError,
 		}
 	} else {
 		return vmResult
 	}
-
-	// return vm.execute()
 }
 
 func (vm *VM) execute() (result ExecutionResult) {
@@ -151,7 +165,10 @@ func (vm *VM) execute() (result ExecutionResult) {
 			result = ExecutionResult{
 				Success: false,
 				Journal: vm.journal,
-				Error:   fmt.Errorf("runtime panic: %v", r),
+				Error: map[string]interface{}{
+					"code":    "RUNTIME_PANIC",
+					"message": fmt.Sprintf("%v", r),
+				},
 			}
 		}
 	}()
@@ -167,7 +184,7 @@ func (vm *VM) execute() (result ExecutionResult) {
 			return ExecutionResult{
 				Success: false,
 				Journal: vm.journal,
-				Error:   fmt.Errorf("execution aborted due to previous errors: %v", vm.errors),
+				Error:   vm.lastError,
 			}
 		}
 
@@ -250,6 +267,10 @@ func (vm *VM) execute() (result ExecutionResult) {
 			vm.execNonce()
 		case compiler.OP_HASH:
 			vm.execHash(code)
+		case compiler.OP_TRY:
+			vm.execTry(code)
+		case compiler.OP_END_TRY:
+			vm.execEndTry()
 		case compiler.OP_ERR:
 			vm.execErr()
 		case compiler.OP_DELETE:
@@ -260,13 +281,16 @@ func (vm *VM) execute() (result ExecutionResult) {
 			return ExecutionResult{
 				Success: true,
 				Journal: vm.journal,
-				Error:   nil,
+				Error:   vm.lastError,
 			}
 		default:
 			return ExecutionResult{
 				Success: false,
 				Journal: vm.journal,
-				Error:   fmt.Errorf("unknown opcode: 0x%02X", op),
+				Error: map[string]interface{}{
+					"code":    "UNKNOWN_OPCODE",
+					"message": fmt.Sprintf("unknown opcode: 0x%02X", op),
+				},
 			}
 		}
 	}
@@ -801,6 +825,28 @@ func (vm *VM) execHash(code []byte) {
 	vm.push(hashHex)
 }
 
+func (vm *VM) execTry(code []byte) {
+	high := int(code[vm.ip])
+	low := int(code[vm.ip+1])
+	slot := int(code[vm.ip+2])
+	vm.ip += 3
+	handler := (high << 8) | low
+
+	vm.tryStack = append(vm.tryStack, TryFrame{
+		handlerAddr: handler,
+		callDepth:   len(vm.callStack),
+		stackDepth:  len(vm.stack),
+		errorSlot:   slot,
+	})
+}
+
+func (vm *VM) execEndTry() {
+	if len(vm.tryStack) == 0 {
+		panic("OP_END_TRY without matching OP_TRY")
+	}
+	vm.tryStack = vm.tryStack[:len(vm.tryStack)-1]
+}
+
 func (vm *VM) execEmitEvent() {
 	vm.ip++
 	eventPayload := vm.pop("OP_EMIT_EVENT")
@@ -865,6 +911,38 @@ func (vm *VM) execRequire() {
 }
 
 func (vm *VM) execErr() {
-	message := vm.pop("OP_ERR")
-	vm.errors = append(vm.errors, fmt.Errorf("execution error: %v", message))
+	raw := vm.pop("OP_ERR")
+
+	var errMap map[string]interface{}
+	switch v := raw.(type) {
+	case map[string]interface{}:
+		errMap = v
+	case string:
+		errMap = map[string]interface{}{
+			"code":    "ERROR",
+			"message": v,
+		}
+	default:
+		errMap = map[string]interface{}{
+			"code":    "ERROR",
+			"message": fmt.Sprintf("%v", raw),
+		}
+	}
+
+	vm.lastError = errMap
+
+	if len(vm.tryStack) > 0 {
+		h := vm.tryStack[len(vm.tryStack)-1]
+		vm.tryStack = vm.tryStack[:len(vm.tryStack)-1]
+
+		if len(vm.callStack) < h.callDepth {
+			vm.stack = vm.stack[:h.stackDepth]
+		}
+
+		vm.storage[h.errorSlot] = errMap
+		vm.ip = h.handlerAddr
+		return
+	}
+
+	vm.errors = append(vm.errors, fmt.Errorf("aborted"))
 }

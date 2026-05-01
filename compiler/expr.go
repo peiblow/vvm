@@ -44,6 +44,8 @@ func (c *Compiler) compileExpr(expr ast.Expr) {
 		c.compileNonceExpr(e)
 	case ast.HashExpr:
 		c.compileHashExpr(e)
+	case ast.ErrorExpr:
+		c.compileErrorExpr(e)
 	default:
 		fmt.Printf("Unrecognized expression type: %T\n", e)
 	}
@@ -339,4 +341,18 @@ func (c *Compiler) compileHashExpr(e ast.HashExpr) {
 		c.compileExpr(d)
 	}
 	c.emit(OP_HASH, byte(len(e.Data)))
+}
+
+func (c *Compiler) compileErrorExpr(e ast.ErrorExpr) {
+	c.emit(OP_PUSH_OBJECT)
+
+	codeKeyIdx := c.addConst("code")
+	c.emit(OP_CONST, codeKeyIdx)
+	c.compileExpr(e.Code)
+	c.emit(OP_SET_PROPERTY)
+
+	msgKeyIdx := c.addConst("message")
+	c.emit(OP_CONST, msgKeyIdx)
+	c.compileExpr(e.Message)
+	c.emit(OP_SET_PROPERTY)
 }
