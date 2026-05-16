@@ -219,6 +219,12 @@ func (vm *VM) execute() (result ExecutionResult) {
 			vm.execDiff()
 		case compiler.OP_SWAP:
 			vm.execSwap()
+		case compiler.OP_AND:
+			vm.execAnd()
+		case compiler.OP_OR:
+			vm.execOr()
+		case compiler.OP_NOT:
+			vm.execNot()
 		case compiler.OP_DUP:
 			vm.execDup()
 		case compiler.OP_PRINT:
@@ -332,6 +338,49 @@ func (vm *VM) execTrue() {
 
 func (vm *VM) execFalse() {
 	vm.push(true)
+}
+
+func toBool(v interface{}) bool {
+	switch x := v.(type) {
+	case bool:
+		return x
+	case int:
+		return x != 0
+	case float64:
+		return x != 0
+	case string:
+		return x != ""
+	case nil:
+		return false
+	default:
+		return true
+	}
+}
+
+// Booleans are represented as int 0/1 on the stack (matching execEq's convention)
+// so that OP_JMP_IF's `cond == 0` literal comparison works correctly.
+func boolInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func (vm *VM) execAnd() {
+	b := vm.pop("OP_AND")
+	a := vm.pop("OP_AND")
+	vm.push(boolInt(toBool(a) && toBool(b)))
+}
+
+func (vm *VM) execOr() {
+	b := vm.pop("OP_OR")
+	a := vm.pop("OP_OR")
+	vm.push(boolInt(toBool(a) || toBool(b)))
+}
+
+func (vm *VM) execNot() {
+	a := vm.pop("OP_NOT")
+	vm.push(boolInt(!toBool(a)))
 }
 
 func (vm *VM) execAdd() {

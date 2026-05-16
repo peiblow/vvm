@@ -240,6 +240,10 @@ func (c *Compiler) compileBinary(e ast.BinaryExpr) {
 		c.emit(OP_DIFF)
 	case "+=":
 		c.emit(OP_PLUS_EQ)
+	case "&&":
+		c.emit(OP_AND)
+	case "||":
+		c.emit(OP_OR)
 	}
 }
 

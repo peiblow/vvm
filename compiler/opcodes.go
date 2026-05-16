@@ -30,6 +30,11 @@ const (
 	OP_DIFF    = 0x0C // diferente
 	OP_PLUS_EQ = 0x0D // incremento e atribuição
 
+	// Operações lógicas
+	OP_AND = 0x63 // AND lógico (consome dois booleanos, empilha um)
+	OP_OR  = 0x64 // OR lógico (consome dois booleanos, empilha um)
+	OP_NOT = 0x65 // NOT lógico (consome um booleano, empilha um)
+
 	// I/O
 	OP_PRINT   = 0x11 // imprime valor do topo
 	OP_GET_ENV = 0x20 // obtém variável de ambiente
@@ -95,6 +100,9 @@ var OpcodeNames = map[byte]string{
 	OP_EQ:            "EQ",
 	OP_DIFF:          "DIFF",
 	OP_PLUS_EQ:       "PLUS_EQ",
+	OP_AND:           "AND",
+	OP_OR:            "OR",
+	OP_NOT:           "NOT",
 	OP_PRINT:         "PRINT",
 	OP_NOP:           "NOP",
 	OP_JMP:           "JMP",

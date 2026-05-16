@@ -2,6 +2,7 @@ package compiler
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/peiblow/vvm/ast"
 )
@@ -211,9 +212,28 @@ func (c *Compiler) emit(opcodes ...byte) {
 }
 
 func (c *Compiler) addConst(val interface{}) byte {
+	if isComparableConst(val) {
+		for i, v := range c.ConstPool {
+			if isComparableConst(v) && v == val {
+				return byte(i)
+			}
+		}
+	}
 	idx := len(c.ConstPool)
 	c.ConstPool = append(c.ConstPool, val)
+	if idx > 255 {
+		panic(fmt.Sprintf("ConstPool overflow: %d entries — OP_CONST operand is 1 byte (max 256). Reduce contract size or implement OP_LCONST.", idx+1))
+	}
 	return byte(idx)
+}
+
+// Slices and maps panic when compared with ==; only dedupe values whose dynamic
+// type is comparable (strings, ints, floats, comparable structs like ast.SymbolExpr).
+func isComparableConst(v interface{}) bool {
+	if v == nil {
+		return true
+	}
+	return reflect.TypeOf(v).Comparable()
 }
 
 func (c *Compiler) findConst(val interface{}) byte {
