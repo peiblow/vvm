@@ -503,10 +503,30 @@ func asNumber(v interface{}) float64 {
 	}
 }
 
+// isNumeric reports whether v is one of the VM's numeric runtime types.
+func isNumeric(v interface{}) bool {
+	switch v.(type) {
+	case int, int64, float64:
+		return true
+	}
+	return false
+}
+
+// valuesEqual handles the cross-type case where JSON-borne numbers arrive as
+// float64 but bytecode literals are emitted as int. Without this, comparisons
+// like `request.approved == 1` always return false when `approved` came in via
+// the args payload. Strings and other comparable types fall back to direct ==.
+func valuesEqual(a, b interface{}) bool {
+	if isNumeric(a) && isNumeric(b) {
+		return asNumber(a) == asNumber(b)
+	}
+	return a == b
+}
+
 func (vm *VM) execEq() {
 	b := vm.pop("OP_EQ")
 	a := vm.pop("OP_EQ")
-	if a == b {
+	if valuesEqual(a, b) {
 		vm.push(1)
 	} else {
 		vm.push(0)
@@ -516,7 +536,7 @@ func (vm *VM) execEq() {
 func (vm *VM) execDiff() {
 	b := vm.pop("OP_DIFF")
 	a := vm.pop("OP_DIFF")
-	if a != b {
+	if !valuesEqual(a, b) {
 		vm.push(1)
 	} else {
 		vm.push(0)
